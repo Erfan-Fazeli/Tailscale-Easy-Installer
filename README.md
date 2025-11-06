@@ -99,15 +99,39 @@ Exit nodes require one-time manual approval:
 1. Go to your repository **Settings** → **Secrets and variables** → **Codespaces**
 2. Click **New repository secret**
 3. Name: `TAILSCALE_AUTH_KEY`
-4. Value: Your auth key
+4. Value: Your auth key (from https://login.tailscale.com/admin/settings/keys)
 5. Click **Add secret**
 
-**Step 2:** Deploy
+**Step 2:** Create Codespace
 1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait 2-3 minutes
-3. ✅ Done! Check: `sudo tailscale status`
+2. Wait for Codespace to initialize (~2-3 minutes)
+3. You'll see a welcome message with instructions
 
-**💡 Note:** Codespaces auto-stops when idle to save your usage hours. Tailscale reconnects when you restart.
+**Step 3:** Start Tailscale
+```bash
+# In the Codespace terminal, run:
+./run-tailscale.sh
+```
+
+This will:
+- ✅ Start Tailscale daemon
+- ✅ Connect to your network
+- ✅ Enable exit node
+- ✅ Show all logs in real-time in the terminal
+
+**Step 4:** Verify
+```bash
+# Check Tailscale status
+sudo tailscale status
+
+# Check health endpoint
+curl http://localhost:8080/health
+```
+
+**💡 Notes:**
+- All logs are displayed directly in the terminal (no hidden output!)
+- Codespaces auto-stops when idle to save your usage hours
+- Tailscale will reconnect automatically when you restart the Codespace
 
 ---
 

@@ -28,8 +28,8 @@
 		// Value: tskey-auth-xxxxxxxxxxxxxxxxxxxxx
 	},
 
-	// This command executes our universal startup script in Codespaces
-	"postCreateCommand": "/usr/local/bin/start.sh",
+	// Display welcome message and instructions
+	"postCreateCommand": "cat /usr/local/bin/CODESPACE_README.txt",
 
 	// Forward health check port
 	"forwardPorts": [8080],

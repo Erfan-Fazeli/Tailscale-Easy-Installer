@@ -14,8 +14,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && curl -fsSL https://tailscale.com/install.sh | sh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy the universal startup script
+# Copy the universal startup script and README
 COPY start.sh /usr/local/bin/start.sh
+COPY CODESPACE_README.txt /usr/local/bin/CODESPACE_README.txt
 RUN chmod +x /usr/local/bin/start.sh
 
 # Expose health check port
