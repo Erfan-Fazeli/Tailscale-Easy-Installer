@@ -7,6 +7,21 @@ set -e
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 err() { echo "[$(date '+%H:%M:%S')] ❌ $*" >&2; exit 1; }
 
+# Load .env file if it exists
+if [ -f .env ]; then
+    log "Loading configuration from .env file..."
+    set -a  # automatically export all variables
+    source .env
+    set +a
+elif [ -f "$(dirname "$0")/.env" ]; then
+    log "Loading configuration from .env file..."
+    set -a
+    source "$(dirname "$0")/.env"
+    set +a
+else
+    log "No .env file found - using environment variables only"
+fi
+
 log "🚀 Starting Tailscale Exit Node..."
 
 # Detect platform
