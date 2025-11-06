@@ -1,0 +1,31 @@
+# Environment variables with secrets
+.env
+.env.local
+.env.*.local
+
+# Tailscale state (if running locally)
+tailscale-state/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Temporary files
+*.tmp
+.cache/
+
+# Build outputs (if any)
+dist/
+build/

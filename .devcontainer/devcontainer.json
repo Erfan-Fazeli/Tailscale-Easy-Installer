@@ -1,0 +1,44 @@
+{
+	"name": "Tailscale Exit Node - Auto-Installer",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "."
+	},
+
+	// Grant the container necessary capabilities to manage networking
+	"runArgs": [
+		"--cap-add=NET_ADMIN",
+		"--cap-add=NET_RAW",
+		"--cap-add=SYS_MODULE"
+	],
+
+	// Mount the TUN device from the host into the container (crucial for Tailscale)
+	"mounts": [
+		"source=/dev/net/tun,target=/dev/net/tun,type=bind"
+	],
+
+	// Environment variables - Set these in GitHub Codespaces Secrets
+	"containerEnv": {
+		"CODESPACES": "true",
+		"HTTP_PORT": "8080",
+		"ENABLE_LOGGING": "true"
+		// IMPORTANT: Set TAILSCALE_AUTH_KEY in GitHub Codespaces Secrets
+		// Go to: Repository Settings > Secrets > Codespaces > New secret
+		// Name: TAILSCALE_AUTH_KEY
+		// Value: tskey-auth-xxxxxxxxxxxxxxxxxxxxx
+	},
+
+	// This command executes our universal startup script in Codespaces
+	"postCreateCommand": "/usr/local/bin/start.sh",
+
+	// Forward health check port
+	"forwardPorts": [8080],
+
+	// Port attributes
+	"portsAttributes": {
+		"8080": {
+			"label": "Health Check",
+			"onAutoForward": "notify"
+		}
+	}
+}
