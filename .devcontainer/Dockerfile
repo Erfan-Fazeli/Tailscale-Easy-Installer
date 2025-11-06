@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends curl ca-certificates iptables netcat-openbsd \
+    && mkdir -p /dev/net && mknod /dev/net/tun c 10 200 \
     && curl -fsSL https://tailscale.com/install.sh | sh - \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
