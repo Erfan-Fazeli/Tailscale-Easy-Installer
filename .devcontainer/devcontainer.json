@@ -2,7 +2,7 @@
 	"name": "Tailscale Exit Node",
 	"build": {
 		"dockerfile": "Dockerfile",
-		"context": "."
+		"context": ".."
 	},
 	"runArgs": [
 		"--cap-add=NET_ADMIN",
@@ -16,7 +16,7 @@
 		"CODESPACES": "true"
 	},
 	// Auto-start Tailscale when Codespace opens
-	"postStartCommand": "nohup sudo -E /workspaces/Tailscale_AutoNode-Setup/start.sh > /tmp/tailscale.log 2>&1 & sleep 3 && printf '\n🚀 Tailscale started! View logs: tail -f /tmp/tailscale.log\n\n'",
+	"postStartCommand": "sudo -E /start.sh",
 	"forwardPorts": [8080],
 	"portsAttributes": {
 		"8080": {

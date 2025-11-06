@@ -2,12 +2,18 @@
 set -e
 
 # Load .env if exists
+echo "Loading .env file..."
 if [ -f "/.env" ]; then
+    echo "Found .env at: /.env"
     export $(grep -v '^#' /.env | xargs)
-elif [ -f "/workspace/.env" ]; then
-    export $(grep -v '^#' /workspace/.env | xargs)
+elif [ -f "/workspace/Tailscale_AutoNode-Setup/.env" ]; then
+    echo "Found .env at: /workspace/Tailscale_AutoNode-Setup/.env"
+    export $(grep -v '^#' /workspace/Tailscale_AutoNode-Setup/.env | xargs)
 elif [ -f "/app/.env" ]; then
+    echo "Found .env at: /app/.env"
     export $(grep -v '^#' /app/.env | xargs)
+else
+    echo "No .env file found in standard locations"
 fi
 
 # Configuration
@@ -42,12 +48,21 @@ start_health() {
 
 # Start Tailscale daemon
 start_daemon() {
+    log "Starting Tailscale daemon..."
     sudo tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+    local pid=$!
+    log "Tailscale daemon PID: $pid"
     for i in {1..30}; do
-        sudo tailscale status >/dev/null 2>&1 && return 0
+        if ps -p $pid > /dev/null; then
+            log "Tailscale daemon process is running."
+            if ip link show tailscale0 >/dev/null 2>&1; then
+                log "Tailscale interface tailscale0 is up."
+                return 0
+            fi
+        fi
         sleep 1
     done
-    err "Tailscale daemon failed to start"
+    err "Tailscale daemon failed to start or become responsive"
 }
 
 # Enable IP forwarding
