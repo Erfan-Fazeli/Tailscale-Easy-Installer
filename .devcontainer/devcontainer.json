@@ -1,0 +1,6 @@
+{
+  "name": "Tailscale Node",
+  "build": {"dockerfile": "../Dockerfile"},
+  "forwardPorts": [8080],
+  "postStartCommand": "docker run --rm -v $(pwd)/.env:/.env -p 8080:8080 $(docker build -q .)"
+}

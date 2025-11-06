@@ -1,0 +1,8 @@
+tasks:
+  - name: Tailscale Auto-Setup
+    command: |
+      docker build -t ts-node .
+      docker run --rm -v $(pwd)/.env:/.env -p 8080:8080 ts-node
+ports:
+  - port: 8080
+    visibility: public

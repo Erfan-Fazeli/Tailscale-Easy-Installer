@@ -1,5 +1,4 @@
 # Environment variables (local overrides only)
-.env
 .env.local
 .env.*.local
 

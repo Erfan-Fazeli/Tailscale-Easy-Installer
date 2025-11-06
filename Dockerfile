@@ -17,8 +17,9 @@ RUN mkdir -p /dev/net && \
     (mknod /dev/net/tun c 10 200 2>/dev/null || true) && \
     chmod 600 /dev/net/tun 2>/dev/null || true
 
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY start.sh entrypoint.sh /
+COPY .env /.env
+RUN chmod +x /start.sh /entrypoint.sh
 
 EXPOSE 8080
-CMD ["/start.sh"]
+CMD ["/entrypoint.sh"]

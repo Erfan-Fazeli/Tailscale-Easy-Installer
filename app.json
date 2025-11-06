@@ -1,0 +1,5 @@
+{
+  "name": "Tailscale Auto Node",
+  "description": "Auto-connect to Tailscale network - Configure .env file before deploy",
+  "stack": "container"
+}
