@@ -17,7 +17,7 @@
 		"HTTP_PORT": "8080"
 	},
 	// Auto-start Tailscale when Codespace opens
-	"postStartCommand": "nohup sudo /usr/local/bin/start.sh > /tmp/tailscale.log 2>&1 & echo '✅ Tailscale starting in background. View logs: tail -f /tmp/tailscale.log'",
+	"postStartCommand": "nohup sudo /usr/local/bin/start.sh > /tmp/tailscale.log 2>&1 & sleep 3 && printf '\n🚀 Tailscale started! View logs: tail -f /tmp/tailscale.log\n\n'",
 	"forwardPorts": [8080],
 	"portsAttributes": {
 		"8080": {

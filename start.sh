@@ -74,13 +74,35 @@ log "Starting health server on :$HTTP_PORT"
     echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\",\"hostname\":\"$HOSTNAME\",\"platform\":\"$PLATFORM\"}" | nc -l -p "$HTTP_PORT" -q 1 2>/dev/null
 done) &
 
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-log "✅ Tailscale Exit Node RUNNING!"
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-log "Platform: $PLATFORM | Hostname: $HOSTNAME"
-log "Approve exit node: https://login.tailscale.com/admin/machines"
-log "Health check: http://localhost:$HTTP_PORT/health"
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log ""
+log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "✅ Tailscale Exit Node is RUNNING!"
+log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log ""
+log "📋 Status:"
+log "   Platform: $PLATFORM"
+log "   Hostname: $HOSTNAME"
+log "   Country: $COUNTRY"
+log "   Health: http://localhost:$HTTP_PORT/health"
+log ""
+log "🔗 Next Steps:"
+log "   1. Approve exit node at: https://login.tailscale.com/admin/machines"
+log "   2. Find your node by hostname: $HOSTNAME"
+log "   3. Click 'Allow as exit node'"
+log ""
+log "📊 View Logs:"
+if [ "$PLATFORM" = "Codespaces" ]; then
+    log "   tail -f /tmp/tailscale.log"
+elif [ "$PLATFORM" = "Docker" ]; then
+    log "   docker-compose logs -f"
+else
+    log "   Check your platform's log viewer"
+fi
+log ""
+log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "✅ Setup complete! Service running in background..."
+log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log ""
 
 # Keep alive
 wait $TAILSCALED_PID
