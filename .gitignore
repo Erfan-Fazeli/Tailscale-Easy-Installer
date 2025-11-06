@@ -1,4 +1,6 @@
 # Environment variables with secrets
+.env
+.env.*
 
 
 # Tailscale state (if running locally)
