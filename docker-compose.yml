@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   tailscale:
-    build: .devcontainer
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
     container_name: tailscale-exit-node
     cap_add:
       - NET_ADMIN
