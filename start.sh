@@ -7,16 +7,23 @@ set -e
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 err() { echo "[$(date '+%H:%M:%S')] ❌ $*" >&2; exit 1; }
 
-# Load .env file if it exists
-if [ -f .env ]; then
-    log "Loading configuration from .env file..."
+# Find .env file location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE=""
+
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    ENV_FILE="$SCRIPT_DIR/.env"
+elif [ -f "/workspaces/$(basename $(pwd))/.env" ]; then
+    ENV_FILE="/workspaces/$(basename $(pwd))/.env"
+elif [ -f .env ]; then
+    ENV_FILE=".env"
+fi
+
+# Load .env file if found
+if [ -n "$ENV_FILE" ]; then
+    log "Loading configuration from: $ENV_FILE"
     set -a  # automatically export all variables
-    source .env
-    set +a
-elif [ -f "$(dirname "$0")/.env" ]; then
-    log "Loading configuration from .env file..."
-    set -a
-    source "$(dirname "$0")/.env"
+    source "$ENV_FILE"
     set +a
 else
     log "No .env file found - using environment variables only"
