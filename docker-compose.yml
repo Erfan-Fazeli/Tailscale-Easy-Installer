@@ -4,13 +4,9 @@ services:
   tailscale:
     build:
       context: .
-      dockerfile: .devcontainer/Dockerfile
-    container_name: tailscale-exit-node
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    devices:
-      - /dev/net/tun:/dev/net/tun
+      dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     volumes:

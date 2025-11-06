@@ -2,7 +2,7 @@ services:
   - type: web
     name: tailscale-exit-node
     env: docker
-    dockerfilePath: ./.devcontainer/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /
     disk:
