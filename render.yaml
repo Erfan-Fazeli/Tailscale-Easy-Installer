@@ -4,48 +4,9 @@ services:
     env: docker
     dockerfilePath: .devcontainer/Dockerfile
     dockerContext: .
-
-    # Health check endpoint
-    healthCheckPath: /health
-
-    # Environment variables
-    envVars:
-      - key: TAILSCALE_AUTH_KEY
-        sync: false  # Must be set manually in Render dashboard
-
-      - key: HTTP_PORT
-        value: 8080
-
-      - key: ENABLE_LOGGING
-        value: true
-
-      - key: MAX_RETRIES
-        value: 5
-
-      - key: COUNTRY_LOOKUP_TIMEOUT
-        value: 5
-
-      # Optional: Uncomment to override country detection
-      # - key: COUNTRY_CODE_OVERRIDE
-      #   value: US
-
-      # Optional: Uncomment to add custom hostname prefix
-      # - key: HOSTNAME_PREFIX
-      #   value: myserver
-
-      # Render-specific environment variable
-      - key: RENDER
-        value: true
-
-    # Disk for persistent Tailscale state
+    healthCheckPath: /
     disk:
       name: tailscale-state
       mountPath: /var/lib/tailscale
       sizeGB: 1
-
-    # Auto-deploy on push
     autoDeploy: true
-
-    # Region - choose closest to your target location
-    # Options: oregon, frankfurt, singapore, etc.
-    # region: oregon

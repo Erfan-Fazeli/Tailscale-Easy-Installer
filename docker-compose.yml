@@ -1,52 +1,19 @@
 version: '3.8'
 
 services:
-  tailscale-exit-node:
-    build:
-      context: .
-      dockerfile: .devcontainer/Dockerfile
+  tailscale:
+    build: .devcontainer
     container_name: tailscale-exit-node
-    hostname: tailscale-exit
-
-    # Required capabilities for Tailscale and exit node functionality
     cap_add:
       - NET_ADMIN
       - NET_RAW
-      - SYS_MODULE
-
-    # Mount /dev/net/tun for VPN functionality
     devices:
       - /dev/net/tun:/dev/net/tun
-
-    # Environment variables - Override these or use .env file
-    environment:
-      - TAILSCALE_AUTH_KEY=${TAILSCALE_AUTH_KEY}
-      - HOSTNAME_PREFIX=${HOSTNAME_PREFIX:-}
-      - COUNTRY_CODE_OVERRIDE=${COUNTRY_CODE_OVERRIDE:-}
-      - HTTP_PORT=${HTTP_PORT:-8080}
-      - ENABLE_LOGGING=${ENABLE_LOGGING:-true}
-      - MAX_RETRIES=${MAX_RETRIES:-5}
-      - COUNTRY_LOOKUP_TIMEOUT=${COUNTRY_LOOKUP_TIMEOUT:-5}
-
-    # Expose health check port
     ports:
-      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
-
-    # Persist Tailscale state
+      - "8080:8080"
     volumes:
       - tailscale-state:/var/lib/tailscale
-
-    # Restart policy
     restart: unless-stopped
-
-    # Health check
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${HTTP_PORT:-8080}/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
 volumes:
   tailscale-state:
-    driver: local

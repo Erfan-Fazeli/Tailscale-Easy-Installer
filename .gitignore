@@ -1,5 +1,4 @@
-# Environment variables with secrets
-.env
+# Environment variables (local overrides only)
 .env.local
 .env.*.local
 

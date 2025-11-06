@@ -1,50 +1,21 @@
-# Fly.io configuration for Tailscale Exit Node
-# Deploy with: fly launch (first time) or fly deploy (updates)
-
 app = "tailscale-exit-node"
-primary_region = "iad"  # Change to your preferred region (iad=US East, lhr=London, etc.)
+primary_region = "iad"
 
 [build]
   dockerfile = ".devcontainer/Dockerfile"
 
-[env]
-  HTTP_PORT = "8080"
-  ENABLE_LOGGING = "true"
-  MAX_RETRIES = "5"
-  COUNTRY_LOOKUP_TIMEOUT = "5"
-
-  # Optional: Uncomment to override country detection
-  # COUNTRY_CODE_OVERRIDE = "US"
-
-  # Optional: Uncomment to add custom hostname prefix
-  # HOSTNAME_PREFIX = "myserver"
-
-# Set TAILSCALE_AUTH_KEY as a secret (required):
-# fly secrets set TAILSCALE_AUTH_KEY=tskey-auth-xxxxxxxxxxxxxxxxxxxxx
-
 [http_service]
   internal_port = 8080
   force_https = false
-  auto_stop_machines = false  # Keep running 24/7
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
 
-  # Health check
-  [http_service.checks]
-    [http_service.checks.health]
-      grace_period = "60s"
-      interval = "30s"
-      method = "GET"
-      path = "/health"
-      timeout = "5s"
-
-# VM Resources
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 256
 
-# Persistent volume for Tailscale state
 [mounts]
   source = "tailscale_state"
   destination = "/var/lib/tailscale"

@@ -10,4 +10,4 @@ if [ -f "$(dirname "$0")/.env" ]; then
 fi
 
 # Export all current environment variables and run start.sh with sudo
-sudo -E "$(dirname "$0")/start.sh"
+sudo -E "$(dirname "$0")/.devcontainer/start.sh"
