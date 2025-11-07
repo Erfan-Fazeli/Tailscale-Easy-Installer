@@ -6,10 +6,10 @@ echo "=== Starting Tailscale Auto-Setup ==="
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Get auth key directly from environment
-AUTH_KEY="${TAILSCALE_AUTH_KEY}"
+# Get auth key from argument
+AUTH_KEY="$1"
 if [ -z "$AUTH_KEY" ]; then
-    echo "ERROR: TAILSCALE_AUTH_KEY not set in AutoDeploy"
+    echo "ERROR: TAILSCALE_AUTH_KEY not provided as argument to AutoDeploy.sh"
     exit 1
 fi
 
