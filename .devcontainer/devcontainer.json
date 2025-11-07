@@ -12,10 +12,10 @@
   ],
   "remoteEnv": {
     "TAILSCALE_AUTH_KEY": "${localEnv:TAILSCALE_AUTH_KEY}",
-    "HOSTNAME_PREFIX": "${localEnv:HOSTNAME_PREFIX:Node}",
+    "HOSTNAME_PREFIX": "${localEnv:HOSTNAME_PREFIX:Codespace-}",
     "HTTP_PORT": "8080"
   },
-  "postStartCommand": "/entrypoint.sh > /tmp/tailscale.log 2>&1 &",
-  "postAttachCommand": "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && tail -f /tmp/tailscale.log",
+  "postCreateCommand": "/entrypoint.sh | tee /tmp/tailscale.log",
+  "postAttachCommand": "[ -f /tmp/tailscale-status.txt ] && cat /tmp/tailscale-status.txt || (echo 'Tailscale is starting...' && tail -f /tmp/tailscale.log 2>/dev/null || true)",
   "overrideCommand": true
 }
