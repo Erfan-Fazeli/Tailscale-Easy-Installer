@@ -149,28 +149,20 @@ get_country() {
     fi
 }
 
-# Get next sequential number for hostname uniqueness
+# Get next sequential number - simple global counter (1, 2, 3, ...)
 get_next_sequence() {
-    local prefix="$1"
-    local country="$2"
-    local datacenter="$3"
-    local key="${prefix}__${country}_${datacenter}"
-    
     # Initialize count file if it doesn't exist
-    [ ! -f "$HOSTNAME_COUNT_FILE" ] && touch "$HOSTNAME_COUNT_FILE"
-    
-    # Get current count for this combination
-    local current_count=$(grep "^${key}:" "$HOSTNAME_COUNT_FILE" 2>/dev/null | tail -1 | cut -d':' -f2)
-    [ -z "$current_count" ] && current_count=0
-    
-    # Increment and save
+    [ ! -f "$HOSTNAME_COUNT_FILE" ] && echo "0" > "$HOSTNAME_COUNT_FILE"
+
+    # Read current count
+    local current_count=$(cat "$HOSTNAME_COUNT_FILE" 2>/dev/null || echo "0")
+
+    # Increment
     local next_count=$((current_count + 1))
-    
-    # Remove old entry and add new one
-    grep -v "^${key}:" "$HOSTNAME_COUNT_FILE" > "${HOSTNAME_COUNT_FILE}.tmp" 2>/dev/null || true
-    echo "${key}:${next_count}" >> "${HOSTNAME_COUNT_FILE}.tmp"
-    mv "${HOSTNAME_COUNT_FILE}.tmp" "$HOSTNAME_COUNT_FILE"
-    
+
+    # Save new count
+    echo "$next_count" > "$HOSTNAME_COUNT_FILE"
+
     echo "$next_count"
 }
 
@@ -248,7 +240,7 @@ iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || tru
 
 COUNTRY=$(get_country)
 DATACENTER=$(get_datacenter_info)
-SEQUENCE=$(get_next_sequence "$HOSTNAME_PREFIX" "$COUNTRY" "$DATACENTER")
+SEQUENCE=$(get_next_sequence)
 HOSTNAME=$(get_hostname "$COUNTRY" "$DATACENTER" "$SEQUENCE")
 
 log "Country: $COUNTRY"

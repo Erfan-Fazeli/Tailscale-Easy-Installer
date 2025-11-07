@@ -18,8 +18,8 @@ RUN mkdir -p /var/lib/tailscale /var/run/tailscale /tmp && \
     chmod 755 /var/lib/tailscale /var/run/tailscale
 
 # Copy scripts
-COPY autodeploy.sh entrypoint.sh /
-RUN chmod +x /autodeploy.sh /entrypoint.sh
+COPY AutoDeploy.sh entrypoint.sh /
+RUN chmod +x /AutoDeploy.sh /entrypoint.sh
 
 # Expose health check port
 EXPOSE 8080
