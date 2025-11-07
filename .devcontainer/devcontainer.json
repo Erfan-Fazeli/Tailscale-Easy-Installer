@@ -1,8 +1,19 @@
 {
   "name": "Tailscale Node",
-  "build": {"dockerfile": "../Dockerfile"},
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
   "forwardPorts": [8080],
   "capAdd": ["NET_ADMIN", "NET_RAW"],
-  "runArgs": ["--device=/dev/net/tun"],
-  "postCreateCommand": "/entrypoint.sh"
+  "runArgs": [
+    "--privileged",
+    "--device=/dev/net/tun"
+  ],
+  "remoteEnv": {
+    "TAILSCALE_AUTH_KEY": "${localEnv:TAILSCALE_AUTH_KEY}",
+    "HOSTNAME_PREFIX": "${localEnv:HOSTNAME_PREFIX:Codespace-}",
+    "HTTP_PORT": "8080"
+  },
+  "postCreateCommand": "echo 'Devcontainer created. Run /entrypoint.sh to start Tailscale.'"
 }
