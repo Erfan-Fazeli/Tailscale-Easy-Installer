@@ -15,6 +15,7 @@
     "HOSTNAME_PREFIX": "${localEnv:HOSTNAME_PREFIX:Codespace-}",
     "HTTP_PORT": "8080"
   },
-  "postStartCommand": "/entrypoint.sh",
+  "postCreateCommand": "/entrypoint.sh",
+  "postAttachCommand": "[ -f /tmp/tailscale-status.txt ] && cat /tmp/tailscale-status.txt || echo 'Tailscale is starting up...'",
   "overrideCommand": true
 }

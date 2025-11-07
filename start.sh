@@ -280,31 +280,31 @@ NODES=$(tailscale status 2>/dev/null | grep -c "^[0-9]" || echo "0")
 UPTIME=$(ps -p $$ -o etime= | tr -d ' ' || echo "N/A")
 CONNECTION_STATUS=$(tailscale status 2>/dev/null | head -1 || echo "NeedsApproval")
 
-echo ""
-echo -e "\033[1;32m╔═══════════════════════════════════════════════════════════╗\033[0m"
-echo -e "\033[1;32m║              ✓  TAILSCALE CONNECTION ESTABLISHED           ║\033[0m"
-echo -e "\033[1;32m╚═══════════════════════════════════════════════════════════╝\033[0m"
-echo ""
-echo -e "\033[1;37m┌───────────────────┬──────────────────────────────────────────────────────┐\033[0m"
-echo -e "\033[1;37m│\033[0m \033[1;36mParameter\033[0m         \033[1;37m│\033[0m \033[1;33mValue\033[0m                                                \033[1;37m│\033[0m"
-echo -e "\033[1;37m├───────────────────┼──────────────────────────────────────────────────────┤\033[0m"
-echo -e "\033[1;37m│\033[0m Hostname          \033[1;37m│\033[0m \033[1;33m$HOSTNAME\033[0m"
-echo -e "\033[1;37m│\033[0m Tailscale IPv4    \033[1;37m│\033[0m \033[1;32m$TS_IP4\033[0m"
-echo -e "\033[1;37m│\033[0m Tailscale IPv6    \033[1;37m│\033[0m \033[0;90m$TS_IP6\033[0m"
-echo -e "\033[1;37m│\033[0m Public IP         \033[1;37m│\033[0m \033[0;37m$PUBLIC_IP\033[0m"
-echo -e "\033[1;37m│\033[0m Location          \033[1;37m│\033[0m \033[1;35m$DATACENTER\033[0m"
-echo -e "\033[1;37m│\033[0m Country           \033[1;37m│\033[0m \033[1;35m$COUNTRY\033[0m"
-echo -e "\033[1;37m│\033[0m Connection Status \033[1;37m│\033[0m \033[1;33m$CONNECTION_STATUS\033[0m"
-echo -e "\033[1;37m│\033[0m Exit Node         \033[1;37m│\033[0m \033[1;31mAdvertised (Approve in Admin Panel)\033[0m"
-echo -e "\033[1;37m│\033[0m Network Nodes     \033[1;37m│\033[0m \033[1;36m$NODES\033[0m"
-echo -e "\033[1;37m│\033[0m Uptime            \033[1;37m│\033[0m \033[0;37m$UPTIME\033[0m"
-echo -e "\033[1;37m└───────────────────┴──────────────────────────────────────────────────────┘\033[0m"
-echo ""
-echo -e "\033[1;34m🔗 Admin Panel:\033[0m \033[4;36mhttps://login.tailscale.com/admin/machines\033[0m"
-echo -e "\033[1;34m📊 Health Check:\033[0m \033[4;36mhttp://localhost:$HTTP_PORT\033[0m"
-echo -e "\033[1;33m⚠️  Action Required:\033[0m \033[1;37mApprove this device in the Tailscale Admin Panel\033[0m"
-echo ""
+# Save and display banner
+BANNER=$(cat <<EOF
 
-# Give a moment for all processes to settle before script exits
+╔═══════════════════════════════════════════════════════════╗
+║              ✓  TAILSCALE CONNECTION ESTABLISHED           ║
+╚═══════════════════════════════════════════════════════════╝
+
+Hostname:          $HOSTNAME
+Tailscale IPv4:    $TS_IP4
+Public IP:         $PUBLIC_IP
+Location:          $DATACENTER / $COUNTRY
+Connection:        $CONNECTION_STATUS
+Exit Node:         Advertised (Approve in Admin Panel)
+Network Nodes:     $NODES
+
+🔗 Admin Panel: https://login.tailscale.com/admin/machines
+📊 Health Check: http://localhost:$HTTP_PORT
+
+⚠️  Action Required: Approve this device in the Tailscale Admin Panel
+
+EOF
+)
+
+echo "$BANNER"
+echo "$BANNER" > /tmp/tailscale-status.txt
+
 sleep 2
 log "✓ Tailscale setup complete - services running in background"
