@@ -12,9 +12,9 @@ services:
       - key: HOSTNAME_PREFIX
         value: Render-
       - key: HTTP_PORT
-        value: 10000
+        value: 8080
       - key: PORT
-        value: 10000
+        value: 8080
     disk:
       name: tailscale-state
       mountPath: /var/lib/tailscale

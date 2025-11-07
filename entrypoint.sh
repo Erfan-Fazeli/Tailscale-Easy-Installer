@@ -15,6 +15,7 @@ export TAILSCALE_AUTH_KEY
 export HOSTNAME_PREFIX
 export COUNTRY_CODE_OVERRIDE
 export HTTP_PORT
+export PORT
 
 # Check for auth key
 if [ -z "$TAILSCALE_AUTH_KEY" ]; then
