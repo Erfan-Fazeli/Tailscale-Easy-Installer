@@ -1,327 +1,65 @@
 #!/bin/bash
-set -e
 
-# Configuration
-AUTH_KEY="${TAILSCALE_AUTH_KEY:-${TS_AUTHKEY:-}}"
-HOSTNAME_PREFIX="${HOSTNAME_PREFIX:-}"
-COUNTRY_CODE_OVERRIDE="${COUNTRY_CODE_OVERRIDE:-}"
-HTTP_PORT="${PORT:-${HTTP_PORT:-8080}}"
-DATACENTER_INFO_FILE="/tmp/datacenter_info.txt"
-HOSTNAME_COUNT_FILE="/tmp/hostname_counts.txt"
+# Simple Tailscale Auto-Setup - Minimal Version
+echo "=== Starting Tailscale Auto-Setup ==="
 
-# Simple logging
-log() { echo "[$(date +%H:%M:%S)] $1"; }
-warn() { echo "[WARN] $1"; }
-err() { echo "[ERROR] $1" >&2; exit 1; }
-
-# Try to get auth key from multiple sources (for one-click deploy)
+# Get auth key directly from environment
+AUTH_KEY="${TAILSCALE_AUTH_KEY}"
 if [ -z "$AUTH_KEY" ]; then
-    [ -f /run/secrets/tailscale_key ] && AUTH_KEY=$(cat /run/secrets/tailscale_key) && log "Using mounted secret"
-    [ -z "$AUTH_KEY" ] && [ -f /secrets/TAILSCALE_AUTH_KEY ] && AUTH_KEY=$(cat /secrets/TAILSCALE_AUTH_KEY)
+    echo "ERROR: TAILSCALE_AUTH_KEY not set"
+    exit 1
 fi
 
-# Validate auth key
-[ -z "$AUTH_KEY" ] && err "TAILSCALE_AUTH_KEY not set. Get one at: https://login.tailscale.com/admin/settings/keys"
-[[ ! "$AUTH_KEY" =~ ^tskey-auth- ]] && err "Invalid AUTH_KEY format"
+# Simple logging
+log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Health server function - serves JSON at /health endpoint
-run_health_server() {
-    local port=$1
-    echo "Starting health server on port $port"
-    
-    while true; do
-        (
-            read -r request || exit 1
-            if echo "$request" | grep -q "GET /health"; then
-                printf "HTTP/1.1 200 OK\r\n"
-                printf "Content-Type: application/json\r\n"
-                printf "Content-Length: 15\r\n"
-                printf "Connection: close\r\n"
-                printf "\r\n"
-                printf '{"status":"ok"}'
-            else
-                printf "HTTP/1.1 404 Not Found\r\n"
-                printf "Content-Type: text/plain\r\n"
-                printf "Content-Length: 9\r\n"
-                printf "Connection: close\r\n"
-                printf "\r\n"
-                printf "Not Found"
-            fi
-        ) | nc -l -p $port -q 1
-    done
-}
-
-# Start health server
-start_health() {
-    log "Starting health server on port $HTTP_PORT"
-    run_health_server $HTTP_PORT &
-    HEALTH_PID=$!
-    log "Health server started (PID: $HEALTH_PID)"
-}
+# Start health server on port
+PORT="${PORT:-10000}"
+log "Starting health server on port $PORT"
+while true; do
+    read request < /dev/tcp/0.0.0.0/$PORT 2>/dev/null || continue
+    if echo "$request" | grep -q "GET /health"; then
+        echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 15\r\n\r\n{\"status\":\"ok\"}"
+    fi
+done &
+HEALTH_PID=$!
 
 # Start Tailscale daemon
-start_daemon() {
-    log "Starting Tailscale daemon..."
+log "Starting Tailscale daemon..."
+tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state >/dev/null 2>&1 &
 
-    # Clean up any existing sockets first
-    rm -f /var/run/tailscale/tailscaled.sock
-    rm -f /run/tailscale/tailscaled.sock
+# Wait for daemon
+for i in {1..10}; do
+    tailscale status >/dev/null 2>&1 && break
+    sleep 1
+done
 
-    # Check if daemon is already running
-    if tailscale status >/dev/null 2>&1; then
-        log "Tailscale daemon is already running"
-        return 0
-    fi
-
-    # For Codespaces/containers, directly use userspace mode
-    log "Starting in userspace networking mode (optimal for containers)..."
-    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock >/dev/null 2>&1 &
-    local pid=$!
-
-    # Wait for daemon to be ready (faster check with 0.5s intervals)
-    for i in {1..20}; do
-        sleep 0.5
-        if tailscale status >/dev/null 2>&1; then
-            log "✓ Tailscale daemon ready"
-            return 0
-        fi
-    done
-
-    warn "Daemon startup uncertain, continuing..."
-    return 0
-}
-
-# Get datacenter/cloud provider info (cached, with global timeout)
-get_datacenter_info() {
-    # Check if we have cached info
-    if [ -f "$DATACENTER_INFO_FILE" ]; then
-        cat "$DATACENTER_INFO_FILE"
-        return
-    fi
-
-    # Try to get cloud provider info from multiple sources (silent mode)
-    local provider="Unknown"
-    local region=""
-
-    # Try AWS metadata - faster timeout
-    if aws_region=$(timeout 2 curl -sf --max-time 1 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
-        if [ -n "$aws_region" ]; then
-            provider="AWS"
-            region="$aws_region"
-        fi
-    fi
-
-    # Try GCP metadata if AWS failed
-    if [ "$provider" = "Unknown" ] && gcp_zone=$(timeout 2 curl -sf --max-time 1 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
-        if [ -n "$gcp_zone" ]; then
-            provider="GCP"
-            region="$gcp_zone"
-        fi
-    fi
-
-    # Try Azure metadata if previous failed
-    if [ "$provider" = "Unknown" ] && az_region=$(timeout 2 curl -sf --max-time 1 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
-        if [ -n "$az_region" ]; then
-            provider="Azure"
-            region="$az_region"
-        fi
-    fi
-    
-    # Try ipinfo.io if none of the above work (faster timeout)
-    if [ "$provider" = "Unknown" ]; then
-        local org_info=$(curl -sf --max-time 2 https://ipinfo.io/org 2>/dev/null || echo "")
-        local region_info=$(curl -sf --max-time 2 https://ipinfo.io/region 2>/dev/null || echo "")
-        
-        # Clean up region info
-        region_info=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
-        
-        # For Amazon/Europe format
-        if [ "$org_info" = "AS16509 Amazon.com, Inc." ]; then
-            provider="amazon"
-            region="europewest"
-        elif [ "$org_info" = "AS15169 Google LLC" ]; then
-            provider="google"
-            region="europewest"
-        elif [ -n "$org_info" ]; then
-            # Extract provider name
-            local clean_org=$(echo "$org_info" | sed 's/^AS[0-9]*[[:space:]]*//' | cut -d',' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z]//g')
-            if [ -n "$clean_org" ]; then
-                provider="$clean_org"
-                region="europewest"
-            fi
-        fi
-        
-        # If region still empty, use europewest
-        [[ -z "$region" ]] && region="europewest"
-    fi
-    
-    # Create result in format: amazon-europewest
-    local result="$provider"
-    [ -n "$region" ] && result="${provider}-${region}"
-    
-    # Cache the result
-    echo "$result" > "$DATACENTER_INFO_FILE"
-    
-    echo "$result"
-}
-
-# Detect country code (faster)
-get_country() {
-    [ -n "$COUNTRY_CODE_OVERRIDE" ] && echo "$COUNTRY_CODE_OVERRIDE" && return
-
-    local c=$(curl -sf --max-time 2 https://ipinfo.io/country 2>/dev/null | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
-    # Make sure it's exactly 2 characters and only letters
-    if [ -n "$c" ] && [ ${#c} -eq 2 ] && [[ "$c" =~ ^[A-Z]{2}$ ]]; then
-        echo "$c"
-    else
-        echo "XX"
-    fi
-}
-
-# Get next sequential number - simple global counter (1, 2, 3, ...)
-get_next_sequence() {
-    # Initialize count file if it doesn't exist
-    [ ! -f "$HOSTNAME_COUNT_FILE" ] && echo "0" > "$HOSTNAME_COUNT_FILE"
-
-    # Read current count
-    local current_count=$(cat "$HOSTNAME_COUNT_FILE" 2>/dev/null || echo "0")
-
-    # Increment
-    local next_count=$((current_count + 1))
-
-    # Save new count
-    echo "$next_count" > "$HOSTNAME_COUNT_FILE"
-
-    echo "$next_count"
-}
-
-# Generate enhanced hostname
-get_hostname() {
-    local country="$1"
-    local datacenter="$2"
-    local sequence="$3"
-    
-    # Use full hostname format: Prefix-Datacenter-Country-Sequence
-    local name=""
-    if [ -n "$HOSTNAME_PREFIX" ] && [ -n "$datacenter" ]; then
-        # Remove trailing dash from prefix and leading dash from datacenter
-        local clean_prefix="${HOSTNAME_PREFIX%-}"
-        local clean_datacenter="${datacenter#-}"
-        name="${clean_prefix}-${clean_datacenter}-${country}-${sequence}"
-    elif [ -n "$HOSTNAME_PREFIX" ]; then
-        local clean_prefix="${HOSTNAME_PREFIX%-}"
-        name="${clean_prefix}-${country}-${sequence}"
-    else
-        name="Unknown-${country}-${sequence}"
-    fi
-    
-    # Clean up double dashes
-    name=$(echo "$name" | sed 's/--/-/g')
-    
-    echo "$name"
-}
-
-# Connect to Tailscale (faster retry)
-connect() {
-    local hostname="$1"
-
-    # Try as exit node (2 attempts with shorter wait)
-    for i in 1 2; do
-        if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --advertise-exit-node --accept-routes --timeout=30s; then
-            log "✓ Connected as exit node"
-            return 0
-        fi
-        [ $i -eq 1 ] && sleep 1
-    done
-
-    # Fallback: regular mode
-    warn "Exit node failed, connecting as regular client..."
-    if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --accept-routes --timeout=30s; then
-        warn "Connected without exit node (approve manually in admin console)"
-        return 0
-    fi
-
-    err "Connection failed"
-}
-
-# Cleanup on exit - only stop health server, keep Tailscale running
-cleanup() {
-    # Don't kill health server or stop Tailscale - let them run in background
-    :
-}
-trap cleanup EXIT SIGTERM SIGINT
-
-# Main
-echo "=== Tailscale Auto-Setup (Docker) ==="
-
-start_health
-log "Health server started on port $HTTP_PORT"
-
-start_daemon
-
-# Setup exit node (with fallbacks for restricted environments)
-log "Setting up exit node..."
-sysctl -w net.ipv4.ip_forward=1 2>/dev/null || \
-  echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || \
-  log "IP forwarding unavailable (userspace mode)"
+# Setup networking
+sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
 sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
-iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || true
 
-log "Detecting location..."
-COUNTRY=$(get_country)
-log "Detecting datacenter..."
-DATACENTER=$(get_datacenter_info)
-log "Getting sequence number..."
-SEQUENCE=$(get_next_sequence)
-HOSTNAME=$(get_hostname "$COUNTRY" "$DATACENTER" "$SEQUENCE")
+# Get simple hostname
+COUNTRY=$(curl -sf --max-time 1 ipinfo.io/country 2>/dev/null || echo "XX")
+SEQUENCE=$(cat /tmp/count 2>/dev/null || echo "1")
+echo $((SEQUENCE + 1)) > /tmp/count
 
-log "Country: $COUNTRY"
-log "Datacenter: $DATACENTER"
-log "Hostname: $HOSTNAME"
+# Generate hostname
+HOSTNAME="Tail-Node-${COUNTRY}-${SEQUENCE}"
 
-connect "$HOSTNAME"
+# Connect to Tailscale - use FULL auth key exactly as provided
+log "Connecting with key: ${AUTH_KEY:0:15}..."
+tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes
 
-# Get connection info (parallel where possible)
-TS_IP4=$(tailscale ip -4 2>/dev/null || echo "N/A")
-PUBLIC_IP=$(curl -sf --max-time 2 ifconfig.me 2>/dev/null || echo "N/A")
-NODES=$(tailscale status 2>/dev/null | grep -c "^[0-9]" || echo "0")
-CONNECTION_STATUS=$(tailscale status 2>/dev/null | head -1 || echo "NeedsApproval")
+# Status
+IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
+echo "══ TAILSCALE CONNECTED ══"
+echo "Hostname: $HOSTNAME"
+echo "Tailscale IP: $IP"
+echo "Status: $(tailscale status 2>/dev/null | head -1 || echo 'Pending approval')"
 
-# Save and display banner
-BANNER=$(cat <<EOF
-
-╔═══════════════════════════════════════════════════════════╗
-║              ✓  TAILSCALE CONNECTION ESTABLISHED           ║
-╚═══════════════════════════════════════════════════════════╝
-
-Hostname:          $HOSTNAME
-Tailscale IPv4:    $TS_IP4
-Public IP:         $PUBLIC_IP
-Location:          $DATACENTER / $COUNTRY
-Connection:        $CONNECTION_STATUS
-Exit Node:         Advertised (Approve in Admin Panel)
-Network Nodes:     $NODES
-
-🔗 Admin Panel: https://login.tailscale.com/admin/machines
-📊 Health Check: http://localhost:$HTTP_PORT
-
-⚠️  Action Required: Approve this device in the Tailscale Admin Panel
-
-EOF
-)
-
-echo "$BANNER"
-echo "$BANNER" > /tmp/tailscale-status.txt
-
-log "✓ Tailscale setup complete - services running in background"
-
-# Keep container running with visible output
-echo "✅ Tailscale setup complete - keeping container alive..."
-echo "📊 All services are running in background"
-echo "🔍 You can check status with: docker logs <container-id>"
-
-# استفاده از حلقه برای نگه داشتن container با خروجی زنده
+# Keep alive
+log "Services running..."
 while true; do
-    sleep 30
-    echo "[$(date +%H:%M:%S)] Tailscale services running - $(tailscale status 2>/dev/null | head -1 || echo 'Status unknown')"
+    sleep 60
+    tailscale status >/dev/null 2>&1 && echo "[$(date '+%H:%M:%S')] Tailscale active"
 done
