@@ -27,7 +27,7 @@ fi
 # Start health server
 start_health() {
     log "Starting health server on port $HTTP_PORT"
-    python3 /health-server.py &
+    /health-server &
     HEALTH_PID=$!
     log "Health server started (PID: $HEALTH_PID)"
 }

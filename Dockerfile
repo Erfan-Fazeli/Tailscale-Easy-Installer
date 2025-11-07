@@ -18,11 +18,11 @@ RUN mkdir -p /var/lib/tailscale /var/run/tailscale /tmp && \
     chmod 755 /var/lib/tailscale /var/run/tailscale
 
 # Copy scripts
-COPY AutoDeploy.sh entrypoint.sh health-server.py /
-RUN chmod +x /AutoDeploy.sh /entrypoint.sh /health-server.py
+COPY AutoDeploy.sh entrypoint.sh health-server /
+RUN chmod +x /AutoDeploy.sh /entrypoint.sh /health-server
 
 # Expose health check port
-EXPOSE 8080
+EXPOSE 10000
 
 # Set environment for better exit node compatibility
 ENV TAILSCALE_USE_WIP_CODE=1 \
