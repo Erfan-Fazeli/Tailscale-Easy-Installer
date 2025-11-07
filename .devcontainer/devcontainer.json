@@ -15,6 +15,6 @@
     "HOSTNAME_PREFIX": "${localEnv:HOSTNAME_PREFIX:Codespace-}",
     "HTTP_PORT": "8080"
   },
-  "postStartCommand": "/entrypoint.sh",
+  "postStartCommand": "nohup /entrypoint.sh > /tmp/tailscale.log 2>&1 &",
   "overrideCommand": false
 }

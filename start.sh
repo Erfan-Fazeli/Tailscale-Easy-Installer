@@ -244,10 +244,10 @@ connect() {
     err "Connection failed"
 }
 
-# Cleanup on exit
+# Cleanup on exit - only stop health server, keep Tailscale running
 cleanup() {
-    tailscale down 2>/dev/null || true
-    kill $HEALTH_PID 2>/dev/null || true
+    # Don't kill health server or stop Tailscale - let them run in background
+    :
 }
 trap cleanup EXIT SIGTERM SIGINT
 
@@ -310,3 +310,7 @@ echo -e "\033[1;34m🔗 Admin Panel:\033[0m \033[4;36mhttps://login.tailscale.co
 echo -e "\033[1;34m📊 Health Check:\033[0m \033[4;36mhttp://localhost:$HTTP_PORT\033[0m"
 echo -e "\033[1;33m⚠️  Action Required:\033[0m \033[1;37mApprove this device in the Tailscale Admin Panel\033[0m"
 echo ""
+
+# Give a moment for all processes to settle before script exits
+sleep 2
+log "✓ Tailscale setup complete - services running in background"
