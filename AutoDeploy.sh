@@ -163,6 +163,19 @@ log "AutoDeploy: Starting Tailscale authentication with file-based method..."
 log "AutoDeploy: Using auth key file: $AUTH_KEY_FILE"
 log "AutoDeploy: Auth key from file (for verification): '${AUTH_KEY_FROM_FILE:0:20}...${AUTH_KEY_FROM_FILE: -10}'"
 
+# CRITICAL DEBUG: Let's verify what we're actually sending to Tailscale
+log "AutoDeploy: DEBUG - Full auth key being sent (first/last 15 chars):"
+log "  First 15: '${AUTH_KEY_FROM_FILE:0:15}'"
+log "  Last 15:  '${AUTH_KEY_FROM_FILE: -15}'"
+log "  Full key has $(echo -n "${AUTH_KEY_FROM_FILE}" | wc -c) characters"
+
+# Verify no hidden characters
+if echo "${AUTH_KEY_FROM_FILE}" | grep -q '[^a-zA-Z0-9_-]'; then
+    log "WARNING: Auth key contains unexpected characters!"
+    echo "${AUTH_KEY_FROM_FILE}" | od -c > /tmp/authkey_hex_dump.txt
+    log "Hex dump saved to /tmp/authkey_hex_dump.txt"
+fi
+
 # Method 1: Direct authkey parameter with properly quoted key from file
 log "AutoDeploy: Method 1 - Using --authkey with direct key from file..."
 timeout 10 tailscale up \
@@ -212,23 +225,26 @@ else
             grep -Ei "error|invalid" /tmp/tailscale_auth2.log | head -3
         fi
 
-        # Method 3: Try basic connection without extra flags
-        log "AutoDeploy: Method 3 - Basic connection only..."
+        # Method 3: Reset and try fresh connection with all flags
+        log "AutoDeploy: Method 3 - Fresh connection with --reset flag..."
         timeout 10 tailscale up \
+            --reset \
             --authkey="${AUTH_KEY_FROM_FILE}" \
             --hostname="$HOSTNAME" \
+            --advertise-exit-node \
+            --accept-routes \
             --timeout=5s > /tmp/tailscale_auth3.log 2>&1
 
         AUTH_RESULT=$?
 
         if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth3.log; then
-            log "✓ Authentication successful with basic method!"
-
-            # Now enable exit node features
-            log "Enabling exit node features..."
-            timeout 10 tailscale up --advertise-exit-node --accept-routes 2>&1 | tee -a /tmp/tailscale_auth3.log
+            log "✓ Authentication successful with reset method!"
         else
             log "Method 3 failed (exit code: $AUTH_RESULT)"
+            if grep -Ei "error|invalid" /tmp/tailscale_auth3.log; then
+                log "Error found in output:"
+                grep -Ei "error|invalid" /tmp/tailscale_auth3.log | head -3
+            fi
 
             log ""
             log "======================================"
