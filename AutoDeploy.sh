@@ -146,14 +146,29 @@ HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${S
 # Connect to Tailscale - use auth key directly
 log "AutoDeploy: Connecting with auth key..."
 
+# Save auth key to a temporary file to avoid shell escaping issues
+AUTH_KEY_FILE=$(mktemp)
+echo "$AUTH_KEY" > "$AUTH_KEY_FILE"
+log "AutoDeploy: Saved auth key to temp file: $AUTH_KEY_FILE"
+
+# Enhanced debugging for the authentication process
+log "AutoDeploy: Attempting authentication with saved auth key file"
+
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
     log "Authentication attempt $attempt/3..."
-    if tailscale up --auth-key="$(printf %s "$AUTH_KEY")" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+    if tailscale up --auth-key-file="$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
         log "Authentication successful!"
         break
     else
         log "Authentication attempt $attempt failed"
+        # Try alternative authentication method with explicit key
+        log "AutoDeploy: Trying alternative auth method with explicit key..."
+        AUTH_KEY_RAW=$(cat "$AUTH_KEY_FILE" | tr -d '\n')
+        if tailscale up --auth-key="$AUTH_KEY_RAW" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+            log "Authentication successful with alternative method!"
+            break
+        fi
         if [ $attempt -lt 3 ]; then
             log "Retrying in 2 seconds..."
             sleep 2
@@ -162,6 +177,9 @@ for attempt in {1..3}; do
         fi
     fi
 done
+
+# Clean up
+rm -f "$AUTH_KEY_FILE"
 
 # Status
 IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
