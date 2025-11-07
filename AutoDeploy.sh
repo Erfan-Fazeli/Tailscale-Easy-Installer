@@ -24,10 +24,37 @@ fi
 [ -z "$AUTH_KEY" ] && err "TAILSCALE_AUTH_KEY not set. Get one at: https://login.tailscale.com/admin/settings/keys"
 [[ ! "$AUTH_KEY" =~ ^tskey-auth- ]] && err "Invalid AUTH_KEY format"
 
+# Health server function - serves JSON at /health endpoint
+run_health_server() {
+    local port=$1
+    echo "Starting health server on port $port"
+    
+    while true; do
+        (
+            read -r request || exit 1
+            if echo "$request" | grep -q "GET /health"; then
+                printf "HTTP/1.1 200 OK\r\n"
+                printf "Content-Type: application/json\r\n"
+                printf "Content-Length: 15\r\n"
+                printf "Connection: close\r\n"
+                printf "\r\n"
+                printf '{"status":"ok"}'
+            else
+                printf "HTTP/1.1 404 Not Found\r\n"
+                printf "Content-Type: text/plain\r\n"
+                printf "Content-Length: 9\r\n"
+                printf "Connection: close\r\n"
+                printf "\r\n"
+                printf "Not Found"
+            fi
+        ) | nc -l -p $port -q 1
+    done
+}
+
 # Start health server
 start_health() {
     log "Starting health server on port $HTTP_PORT"
-    /health-server.sh &
+    run_health_server $HTTP_PORT &
     HEALTH_PID=$!
     log "Health server started (PID: $HEALTH_PID)"
 }
@@ -103,25 +130,32 @@ get_datacenter_info() {
     # Try ipinfo.io if none of the above work (faster timeout)
     if [ "$provider" = "Unknown" ]; then
         local org_info=$(curl -sf --max-time 2 https://ipinfo.io/org 2>/dev/null || echo "")
-        if [ -n "$org_info" ]; then
-            # Extract first meaningful word
-            local clean_org=$(echo "$org_info" | sed 's/^AS[0-9]*[[:space:]]*//' | sed 's/Internet[^ ]*//g' | sed 's/Services[^ ]*//g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g')
-            if [ -n "$clean_org" ] && [ ${#clean_org} -ge 2 ]; then
+        local region_info=$(curl -sf --max-time 2 https://ipinfo.io/region 2>/dev/null || echo "")
+        
+        # Clean up region info
+        region_info=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
+        
+        # For Amazon/Europe format
+        if [ "$org_info" = "AS16509 Amazon.com, Inc." ]; then
+            provider="amazon"
+            region="europewest"
+        elif [ "$org_info" = "AS15169 Google LLC" ]; then
+            provider="google"
+            region="europewest"
+        elif [ -n "$org_info" ]; then
+            # Extract provider name
+            local clean_org=$(echo "$org_info" | sed 's/^AS[0-9]*[[:space:]]*//' | cut -d',' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z]//g')
+            if [ -n "$clean_org" ]; then
                 provider="$clean_org"
-            else
-                local first_part=$(echo "$org_info" | awk '{print $1}' | sed 's/[^a-zA-Z0-9]//g')
-                [ -n "$first_part" ] && provider="$first_part"
+                region="europewest"
             fi
         fi
-
-        # Get region from ipinfo (faster timeout)
-        local region_info=$(curl -sf --max-time 2 https://ipinfo.io/region 2>/dev/null || echo "")
-        [ -n "$region_info" ] && region=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
+        
+        # If region still empty, use europewest
+        [[ -z "$region" ]] && region="europewest"
     fi
     
-    # Final fallback if still Unknown
-    [[ -z "$provider" || "$provider" == "Unknown" ]] && provider="Default"
-    
+    # Create result in format: amazon-europewest
     local result="$provider"
     [ -n "$region" ] && result="${provider}-${region}"
     
@@ -135,11 +169,11 @@ get_datacenter_info() {
 get_country() {
     [ -n "$COUNTRY_CODE_OVERRIDE" ] && echo "$COUNTRY_CODE_OVERRIDE" && return
 
-    local c=$(curl -sf --max-time 2 https://ipinfo.io/country 2>/dev/null | tr -d '\n' | tr '[:lower:]' '[:upper:]')
-    if [ -n "$c" ] && [ ${#c} -eq 2 ]; then
+    local c=$(curl -sf --max-time 2 https://ipinfo.io/country 2>/dev/null | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
+    # Make sure it's exactly 2 characters and only letters
+    if [ -n "$c" ] && [ ${#c} -eq 2 ] && [[ "$c" =~ ^[A-Z]{2}$ ]]; then
         echo "$c"
     else
-        warn "Could not detect country, using XX"
         echo "XX"
     fi
 }
