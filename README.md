@@ -31,6 +31,13 @@ Instant deployment of secure, private networks with enterprise-grade features:
 - Automatic key rotation
 - Zero-trust network architecture
 
+### 🌐 **Intelligent Mesh Networking**
+- **Self-healing mesh topology**: Nodes automatically discover optimal routes
+- **Dynamic path optimization**: Route through multiple nodes for best performance
+- **Automatic failover**: Traffic seamlessly reroutes through alternative nodes
+- **Network healing**: Broken connections automatically rebuild via alternative paths
+- **Edge computing ready**: Distributed routing handles complex network topologies
+
 ### 🌍 **Global Scale**
 - Deploy exit nodes worldwide
 - Automatic failover and routing
@@ -184,16 +191,33 @@ git push heroku main
 
 ## 🛠️ Technical Details
 
+### Intelligent Mesh Network Architecture
+Our network automatically discovers optimal routes through your nodes:
+
+```
+Client A → Node 1 ┐
+                 ├→ Node 3 → Node 5 → Exit Node (Node 6)
+Client B → Node 2 ┘
+```
+
+**Key Features:**
+- **Dynamic Path Discovery**: Nodes continuously discover the best routes to exit nodes
+- **Self-Healing Mesh**: If any node fails, traffic automatically reroutes through alternative paths
+- **Intelligent Load Balancing**: Traffic distributed across multiple optimal paths
+- **Automatic Route Optimization**: Always selects the lowest-latency path to your exit nodes
+
 ### Network Modes
 1. **Kernel Mode** (Preferred)
    - Full NAT support
    - Maximum throughput
    - Requires `NET_ADMIN` capability
+   - **Mesh Routing**: 100% optimal performance with direct kernel routing
 
 2. **Userspace Mode** (Fallback)
-   - Works in restricted environments
+   - Works in restricted environments (Railway, Render, Heroku)
    - Slightly reduced throughput
    - No kernel privileges needed
+   - **Mesh Routing**: Still fully functional via intelligent userspace routing
 
 ### Auto-Detection
 - **Cloud Provider** (AWS, GCP, Azure)
