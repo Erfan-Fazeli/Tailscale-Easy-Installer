@@ -5,7 +5,6 @@ services:
     image:
       url: ghcr.io/erfan-fazeli/tailscale-easy-installer:latest
     startCommand: /entrypoint.sh
-    healthCheckPath: /health
     envVars:
       - key: TAILSCALE_AUTH_KEY
         sync: false
