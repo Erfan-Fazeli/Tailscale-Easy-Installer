@@ -2,20 +2,31 @@ version: '3.8'
 
 services:
   tailscale:
-    image: ghcr.io/erfan-fazeli/tailscale-easy-installer:latest
-    env_file:
-      - .env
+    image: ghcr.io/erfan-fazeli/tailscale-autonode:latest
+    container_name: tailscale-autonode
+    hostname: autonode
 
-    # Exit node requirements
+    # Network capabilities for exit node functionality
     cap_add:
       - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
+      - NET_RAW
+
+    environment:
+      # Your Tailscale auth key (get it from https://login.tailscale.com/admin/settings/keys)
+      - TAILSCALE_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+      # Optional: Custom hostname prefix (default: AutoNode-)
+      - HOSTNAME_PREFIX=${HOSTNAME_PREFIX:-AutoNode-}
+      # Optional: Health check port (default: 8080)
+      - HTTP_PORT=${HTTP_PORT:-8080}
 
     ports:
-      - "8080:8080"
+      # Health check endpoint
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+
     volumes:
+      # Persist Tailscale state
       - tailscale-state:/var/lib/tailscale
+
     restart: unless-stopped
 
 volumes:

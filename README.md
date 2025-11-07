@@ -1,12 +1,12 @@
 <div align="center">
 
-![Tailscale AutoNode Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,14,18,20,24&height=250&section=header&text=Tailscale%20AutoNode&fontSize=70&fontAlignY=35&desc=Deploy%20Your%20VPN%20Exit%20Node%20in%2060%20Seconds&descSize=25&descAlignY=55&animation=fadeIn)
+![Tailscale AutoNode Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,14,18,20,24&height=250&section=header&text=Tailscale%20AutoNode&fontSize=70&fontAlignY=35&desc=Deploy%20Your%20Private%20Network%20Infrastructure%20in%2060%20Seconds&descSize=25&descAlignY=55&animation=fadeIn)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/tailscale/tailscale)
 [![Stars](https://img.shields.io/github/stars/Erfan-Fazeli/Tailscale_AutoNode?style=for-the-badge&color=yellow)](https://github.com/Erfan-Fazeli/Tailscale_AutoNode)
 
-**Automated Tailscale exit nodes - zero config, just deploy.**
+**Automated private network infrastructure with zero config - scalable and production-ready.**
 
 </div>
 
@@ -34,36 +34,78 @@ Click a button below to deploy. You'll be prompted for your `TAILSCALE_AUTH_KEY`
 
 <div align="center">
 
-| Platform | Time | Exit Node | Cost |
-|----------|------|-----------|------|
-| **Docker** | 30s | ✅ | Free |
-| **Railway** | 60s | ⚠️ | $5/mo |
-| **Render** | 60s | ⚠️ | $7/mo |
-| **Fly.io** | 90s | ⚠️ | $5/mo |
-| **Heroku** | 90s | ❌ | $5/mo |
+<table>
+<tr>
+<td align="center" width="25%">
 
-</div>
+**🐳 Docker**
 
-<div align="center">
-  <a href="https://railway.app/new/template?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
-    <img src="https://img.shields.io/badge/Deploy_on-Railway-663399?style=for-the-badge&logo=railway&logoColor=white" alt="Deploy on Railway">
-  </a>
-  <a href="https://render.com/deploy?repo=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
-    <img src="https://img.shields.io/badge/Deploy_to-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy on Render">
-  </a>
-  <a href="https://heroku.com/deploy?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
-    <img src="https://img.shields.io/badge/Deploy_to-Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white" alt="Deploy on Heroku">
-  </a>
-  <a href="https://fly.io/launch">
-    <img src="https://img.shields.io/badge/Deploy_on-Fly.io-8B5CF6?style=for-the-badge&logo=fly.io&logoColor=white" alt="Deploy on Fly.io">
-  </a>
+`30 seconds`
+
+**Best Performance**
+
+Full Kernel Access
+
+Production Ready ⭐
+
+</td>
+<td align="center" width="25%">
+
+**🚂 Railway**
+
+`~60 seconds`
+
+**Auto-Scaling**
+
+Global Edge Network
+
+<a href="https://railway.app/new/template?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
+  <img src="https://img.shields.io/badge/Deploy-663399?style=for-the-badge&logo=railway&logoColor=white" alt="Deploy">
+</a>
+
+</td>
+<td align="center" width="25%">
+
+**🎨 Render**
+
+`~60 seconds`
+
+**Zero Config**
+
+Managed Infrastructure
+
+<a href="https://render.com/deploy?repo=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
+  <img src="https://img.shields.io/badge/Deploy-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy">
+</a>
+
+</td>
+<td align="center" width="25%">
+
+**🪁 Fly.io**
+
+`~90 seconds`
+
+**Multi-Region**
+
+Edge Deployment
+
+<a href="https://fly.io/launch">
+  <img src="https://img.shields.io/badge/Deploy-8B5CF6?style=for-the-badge&logo=fly&logoColor=white" alt="Deploy">
+</a>
+
+</td>
+</tr>
+</table>
+
 </div>
 
 ---
 
 ## 📋 Platform-Specific Guides
 
-### <img src="https://www.docker.com/wp-content/uploads/2022/03/Moby-logo.png" width="20" height="20"> Docker (Recommended)
+### ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+**Using Docker:**
 ```bash
 docker run -d --name=tailscale \
   --cap-add=NET_ADMIN \
@@ -73,8 +115,36 @@ docker run -d --name=tailscale \
   ghcr.io/erfan-fazeli/tailscale-autonode:latest
 ```
 
+**Using Docker Compose:**
+```yaml
+version: '3.8'
+services:
+  tailscale:
+    image: ghcr.io/erfan-fazeli/tailscale-autonode:latest
+    container_name: tailscale
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TAILSCALE_AUTH_KEY=tskey-auth-your-key-here
+    volumes:
+      - ./tailscale:/var/lib/tailscale
+    restart: unless-stopped
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
+---
+
 <details>
-<summary><img src="https://railway.app/brand/logo-light.png" width="20" height="20"> Railway</summary>
+<summary>
+
+### ![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+
+</summary>
 
 1. Click the Railway deploy button above
 2. Enter your `TAILSCALE_AUTH_KEY` when prompted
@@ -83,7 +153,11 @@ docker run -d --name=tailscale \
 </details>
 
 <details>
-<summary><img src="https://render.com/images/logo-symbol.svg" width="20" height="20"> Render</summary>
+<summary>
+
+### ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+
+</summary>
 
 1. Click the Render deploy button
 2. Fork this repo (Render will prompt you)
@@ -93,14 +167,22 @@ docker run -d --name=tailscale \
 </details>
 
 <details>
-<summary><img src="https://www.vectorlogo.zone/logos/heroku/heroku-icon.svg" width="20" height="20"> Heroku</summary>
+<summary>
+
+### ![Heroku](https://img.shields.io/badge/Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white)
+
+</summary>
 
 The deploy button handles everything - just add your auth key when prompted!
 
 </details>
 
 <details>
-<summary><img src="https://fly.io/public/images/brand/logo.svg" width="20" height="20"> Fly.io</summary>
+<summary>
+
+### ![Fly.io](https://img.shields.io/badge/Fly.io-8B5CF6?style=for-the-badge&logo=fly&logoColor=white)
+
+</summary>
 
 ```bash
 git clone https://github.com/Erfan-Fazeli/Tailscale_AutoNode
@@ -187,10 +269,10 @@ graph TB
 </div>
 
 **How it works:**
-1. **Deploy** → Your exit node registers with Tailscale
-2. **Mesh Formation** → All your devices discover each other automatically
-3. **Smart Routing** → Traffic finds the best path (direct P2P or via exit node)
-4. **NAT Bypass** → DERP relays ensure connectivity even behind firewalls
+1. **Deploy** → Your network node registers and joins the mesh
+2. **Mesh Formation** → Nodes discover each other and build the network topology
+3. **Smart Routing** → Traffic intelligently routes through the best available path
+4. **NAT Bypass** → DERP relays ensure connectivity across any network environment
 
 ### Network Modes
 - **Kernel Mode** (Docker): Best performance, full NAT support
@@ -200,10 +282,11 @@ graph TB
 
 ## 💡 Use Cases
 
-- **Remote Work**: Secure access to your home/office network from anywhere
-- **Privacy**: Route traffic through your own server instead of commercial VPNs
-- **Multi-Region**: Deploy exit nodes globally for lower latency
-- **Development**: Secure access to staging/dev environments
+- **Enterprise Networking**: Build secure, scalable private networks across multiple regions
+- **Infrastructure as Code**: Deploy network nodes as part of your infrastructure automation
+- **Multi-Cloud Connectivity**: Connect resources across AWS, GCP, Azure seamlessly
+- **Edge Computing**: Create distributed network infrastructure with automatic failover
+- **Development & Staging**: Isolated network environments for different deployment stages
 
 ---
 
