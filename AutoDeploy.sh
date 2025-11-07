@@ -6,10 +6,10 @@ echo "=== Starting Tailscale Auto-Setup ==="
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Get auth key from argument
-AUTH_KEY="$1"
+# Get auth key directly from environment
+AUTH_KEY="${TAILSCALE_AUTH_KEY}"
 if [ -z "$AUTH_KEY" ]; then
-    echo "ERROR: TAILSCALE_AUTH_KEY not provided as argument to AutoDeploy.sh"
+    echo "ERROR: TAILSCALE_AUTH_KEY not set in AutoDeploy"
     exit 1
 fi
 
@@ -135,7 +135,7 @@ log "AutoDeploy: Connecting with auth key..."
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
     log "Authentication attempt $attempt/3..."
-    if tailscale up --auth-key="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+    if tailscale up --auth-key="$(printf %s "$AUTH_KEY")" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
         log "Authentication successful!"
         break
     else
