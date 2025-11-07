@@ -1,7 +1,7 @@
 services:
   - type: web
     name: tailscale-exit-node
-    env: docker
+    runtime: image
     image:
       url: ghcr.io/erfan-fazeli/tailscale-easy-installer:latest
     healthCheckPath: /health
@@ -18,4 +18,3 @@ services:
       name: tailscale-state
       mountPath: /var/lib/tailscale
       sizeGB: 1
-    autoDeploy: true
