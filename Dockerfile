@@ -34,4 +34,4 @@ EXPOSE 8080
 ENV TAILSCALE_USE_WIP_CODE=1 \
     TAILSCALE_DEBUG_FIREWALL_MODE=auto
 
-CMD ["/entrypoint.sh"]
+CMD ["sleep", "infinity"]
