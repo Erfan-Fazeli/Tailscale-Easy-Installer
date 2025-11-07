@@ -6,22 +6,29 @@ echo "=== Starting Tailscale Auto-Setup ==="
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Get auth key directly from environment
+# Get auth key directly from environment - try multiple sources
 AUTH_KEY="${TAILSCALE_AUTH_KEY}"
 if [ -z "$AUTH_KEY" ]; then
+    # Fallback to check render environment variables directly
+    log "AutoDeploy: TAILSCALE_AUTH_KEY not found, checking environment..."
+    log "AutoDeploy: ENV vars starting with TAILSCALE:"
+    env | grep TAILSCALE | grep -v AUTH || true
     echo "ERROR: TAILSCALE_AUTH_KEY not set in AutoDeploy"
     exit 1
 fi
 
-# Debug auth key info (without exposing sensitive data)
-log "AutoDeploy: Auth key length: ${#AUTH_KEY}"
-log "AutoDeploy: Auth key preview: ${AUTH_KEY:0:8}...${AUTH_KEY: -8}"
+# Enhanced debugging - show what's actually in the AUTH_KEY variable
+log "AutoDeploy: AUTH_KEY found via environment"
+log "AutoDeploy: Raw AUTH_KEY length: ${#AUTH_KEY}"
+log "AutoDeploy: Raw AUTH_KEY first 20 chars: '${AUTH_KEY:0:20}'"
+log "AutoDeploy: Raw AUTH_KEY last 10 chars: '${AUTH_KEY: -10}'"
 
-# Additional debugging - check if the key looks like a proper Tailscale key
-if [[ "$AUTH_KEY" =~ ^tskey-[a-z]+-[A-Za-z0-9_-]+$ ]]; then
-    log "AutoDeploy: Auth key format appears valid"
+# Check if AUTH_KEY is getting truncated by environment variable processing
+if [ "${#AUTH_KEY}" -ne 61 ]; then
+    log "AutoDeploy: WARNING - Auth key length ${#AUTH_KEY} is not expected 61 characters!"
+    log "AutoDeploy: This suggests the key was truncated during processing"
 else
-    log "AutoDeploy: WARNING - Auth key format may be invalid: ${AUTH_KEY:0:20}"
+    log "AutoDeploy: Auth key length is correct (61 characters)"
 fi
 
 # Start health server using external Python script

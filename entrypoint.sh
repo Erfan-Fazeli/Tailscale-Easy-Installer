@@ -18,6 +18,10 @@ if [ -z "$TAILSCALE_AUTH_KEY" ]; then
     exit 1
 fi
 
+# Enhanced debugging - show what's actually loaded from env files
+echo "=== Entrypoint: Environment debugging ==="
+echo "TAILSCALE_AUTH_KEY from environment: [length=${#TAILSCALE_AUTH_KEY}, first 20='${TAILSCALE_AUTH_KEY:0:20}', last 10='${TAILSCALE_AUTH_KEY: -10}']"
+
 # Remove quotes if present
 TAILSCALE_AUTH_KEY=$(echo "$TAILSCALE_AUTH_KEY" | sed 's/^"//' | sed 's/"$//')
 
@@ -25,8 +29,8 @@ TAILSCALE_AUTH_KEY=$(echo "$TAILSCALE_AUTH_KEY" | sed 's/^"//' | sed 's/"$//')
 export TAILSCALE_AUTH_KEY
 
 # Debug auth key info (without exposing sensitive data)
-echo "✓ Found TAILSCALE_AUTH_KEY"
+echo "✓ Found and cleaned TAILSCALE_AUTH_KEY"
 echo "Auth key length: ${#TAILSCALE_AUTH_KEY}"
-echo "Auth key prefix: ${TAILSCALE_AUTH_KEY:0:8}..."
+echo "Auth key preview: ${TAILSCALE_AUTH_KEY:0:8}...${TAILSCALE_AUTH_KEY: -8}"
 
 exec /AutoDeploy.sh
