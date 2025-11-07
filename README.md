@@ -1,6 +1,7 @@
 <div align="center">
 
-# 🚀 Tailscale AutoNode Setup | Easy Installer For All Platform
+# 🚀 Tailscale AutoNode Setup 
+# 💎 Easy Installer Script For All Platform:)
 
 
 
