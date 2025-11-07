@@ -32,65 +32,83 @@ Get your Tailscale auth key from [here](https://login.tailscale.com/admin/settin
 
 Click a button below to deploy. You'll be prompted for your `TAILSCALE_AUTH_KEY` - just paste it and you're done!
 
-<div align="center">
-
 <table>
 <tr>
-<td align="center" width="25%">
+<td align="center" width="25%" style="padding: 20px; vertical-align: top;">
 
-**🐳 Docker**
+### 🐳 Docker
 
-`30 seconds`
+⏱️ `30 seconds`
+
+<br>
 
 **Best Performance**
 
 Full Kernel Access
 
-Production Ready ⭐
+<br>
+
+✅ Production Ready
+
+<br><br>
+
+*Self-hosted & Free*
 
 </td>
-<td align="center" width="25%">
+<td align="center" width="25%" style="padding: 20px; vertical-align: top;">
 
-**🚂 Railway**
+### 🚂 Railway
 
-`~60 seconds`
+⏱️ `~60 seconds`
+
+<br>
 
 **Auto-Scaling**
 
 Global Edge Network
 
+<br><br><br>
+
 <a href="https://railway.app/new/template?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
-  <img src="https://img.shields.io/badge/Deploy-663399?style=for-the-badge&logo=railway&logoColor=white" alt="Deploy">
+  <img src="https://img.shields.io/badge/Deploy_Now-663399?style=for-the-badge&logo=railway&logoColor=white&labelColor=663399" alt="Deploy on Railway" height="40">
 </a>
 
 </td>
-<td align="center" width="25%">
+<td align="center" width="25%" style="padding: 20px; vertical-align: top;">
 
-**🎨 Render**
+### 🎨 Render
 
-`~60 seconds`
+⏱️ `~60 seconds`
+
+<br>
 
 **Zero Config**
 
 Managed Infrastructure
 
+<br><br><br>
+
 <a href="https://render.com/deploy?repo=https://github.com/Erfan-Fazeli/Tailscale_AutoNode">
-  <img src="https://img.shields.io/badge/Deploy-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy">
+  <img src="https://img.shields.io/badge/Deploy_Now-46E3B7?style=for-the-badge&logo=render&logoColor=white&labelColor=46E3B7" alt="Deploy on Render" height="40">
 </a>
 
 </td>
-<td align="center" width="25%">
+<td align="center" width="25%" style="padding: 20px; vertical-align: top;">
 
-**🪁 Fly.io**
+### 🪁 Fly.io
 
-`~90 seconds`
+⏱️ `~90 seconds`
+
+<br>
 
 **Multi-Region**
 
 Edge Deployment
 
+<br><br><br>
+
 <a href="https://fly.io/launch">
-  <img src="https://img.shields.io/badge/Deploy-8B5CF6?style=for-the-badge&logo=fly&logoColor=white" alt="Deploy">
+  <img src="https://img.shields.io/badge/Deploy_Now-8B5CF6?style=for-the-badge&logo=fly&logoColor=white&labelColor=8B5CF6" alt="Deploy on Fly.io" height="40">
 </a>
 
 </td>
@@ -103,7 +121,7 @@ Edge Deployment
 
 ## 📋 Platform-Specific Guides
 
-### ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+### <img src="https://cdn.simpleicons.org/docker/2496ED" width="20" height="20" /> Docker
 
 **Using Docker:**
 ```bash
@@ -140,11 +158,9 @@ docker-compose up -d
 ---
 
 <details>
-<summary>
+<summary><img src="https://cdn.simpleicons.org/railway/0B0D0E" width="16" height="16" /> <b>Railway</b></summary>
 
-### ![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
-
-</summary>
+<br>
 
 1. Click the Railway deploy button above
 2. Enter your `TAILSCALE_AUTH_KEY` when prompted
@@ -153,11 +169,9 @@ docker-compose up -d
 </details>
 
 <details>
-<summary>
+<summary><img src="https://cdn.simpleicons.org/render/46E3B7" width="16" height="16" /> <b>Render</b></summary>
 
-### ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
-
-</summary>
+<br>
 
 1. Click the Render deploy button
 2. Fork this repo (Render will prompt you)
@@ -167,22 +181,18 @@ docker-compose up -d
 </details>
 
 <details>
-<summary>
+<summary><img src="https://cdn.simpleicons.org/heroku/430098" width="16" height="16" /> <b>Heroku</b></summary>
 
-### ![Heroku](https://img.shields.io/badge/Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white)
-
-</summary>
+<br>
 
 The deploy button handles everything - just add your auth key when prompted!
 
 </details>
 
 <details>
-<summary>
+<summary><img src="https://cdn.simpleicons.org/fly/8B5CF6" width="16" height="16" /> <b>Fly.io</b></summary>
 
-### ![Fly.io](https://img.shields.io/badge/Fly.io-8B5CF6?style=for-the-badge&logo=fly&logoColor=white)
-
-</summary>
+<br>
 
 ```bash
 git clone https://github.com/Erfan-Fazeli/Tailscale_AutoNode
