@@ -67,43 +67,70 @@ get_datacenter_info() {
     fi
 
     # Try to get cloud provider info from multiple sources
-    local provider=""
+    local provider="Unknown"
     local region=""
     
-    # Try AWS metadata
-    if aws_info=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null) && [ -n "$aws_info" ]; then
-        provider="AWS-${aws_info}"
-    # Try GCP metadata
-    elif gcp_info=$(curl -sf --max-time 2 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
-        if [ -n "$gcp_info" ]; then
-            provider="GCP-${gcp_info}"
-        fi
-    # Try Azure metadata
-    elif az_info=$(curl -sf --max-time 2 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
-        if [ -n "$az_info" ]; then
-            provider="Azure-${az_info}"
-        fi
-    # Try using ipinfo.io for general location info
-    else
-        local org_info=$(curl -sf --max-time 3 https://ipinfo.io/org 2>/dev/null | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9-]//g')
-        local city_info=$(curl -sf --max-time 3 https://ipinfo.io/city 2>/dev/null | tr -d ' ')
-        if [ -n "$org_info" ]; then
-            provider="${org_info}"
-            if [ -n "$city_info" ]; then
-                region="${city_info}"
-            fi
+    # Try AWS metadata - get region and use that as provider
+    if aws_region=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
+        if [ -n "$aws_region" ]; then
+            provider="AWS"
+            region="$aws_region"
         fi
     fi
-
-    # Fallback to Unknown if no info found
-    [ -z "$provider" ] && provider="Unknown"
+    
+    # Try GCP metadata if AWS failed
+    if [ "$provider" = "Unknown" ] && gcp_zone=$(curl -sf --max-time 2 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
+        if [ -n "$gcp_zone" ]; then
+            provider="GCP"
+            region="$gcp_zone"
+        fi
+    fi
+    
+    # Try Azure metadata if previous failed
+    if [ "$provider" = "Unknown" ] && az_region=$(curl -sf --max-time 2 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
+        if [ -n "$az_region" ]; then
+            provider="Azure"
+            region="$az_region"
+        fi
+    fi
+    
+    # Try ipinfo.io if none of the above work
+    if [ "$provider" = "Unknown" ]; then
+        # Get organization info with better parsing
+        local org_info=$(curl -sf --max-time 4 https://ipinfo.io/org 2>/dev/null || echo "")
+        if [ -n "$org_info" ]; then
+            # Extract first meaningful word, clean it up
+            local clean_org=$(echo "$org_info" | sed 's/^AS[0-9]*[[:space:]]*//' | sed 's/Internet[^ ]*//g' | sed 's/Services[^ ]*//g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g')
+            if [ -n "$clean_org" ] && [ ${#clean_org} -ge 2 ]; then
+                provider="$clean_org"
+            else
+                # Fallback to extracting from organization
+                local first_part=$(echo "$org_info" | awk '{print $1}' | sed 's/[^a-zA-Z0-9]//g')
+                if [ -n "$first_part" ]; then
+                    provider="$first_part"
+                fi
+            fi
+        fi
+        
+        # Also try to get region from ipinfo
+        local region_info=$(curl -sf --max-time 3 https://ipinfo.io/region 2>/dev/null || echo "")
+        if [ -n "$region_info" ]; then
+            region=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
+        fi
+    fi
+    
+    # Final fallback if still Unknown
+    [[ -z "$provider" || "$provider" == "Unknown" ]] && provider="Default"
     
     local result="$provider"
     [ -n "$region" ] && result="${provider}-${region}"
     
     # Cache the result
     echo "$result" > "$DATACENTER_INFO_FILE"
+    
+    # Return without any additional output
     echo "$result"
+    return
 }
 
 # Detect country code
@@ -149,16 +176,23 @@ get_hostname() {
     local country="$1"
     local datacenter="$2"
     local sequence="$3"
-    local name="${country}-${sequence}"
     
     # Use full hostname format: Prefix-Datacenter-Country-Sequence
+    local name=""
     if [ -n "$HOSTNAME_PREFIX" ] && [ -n "$datacenter" ]; then
-        name="${HOSTNAME_PREFIX}-${datacenter}-${country}-${sequence}"
+        # Remove trailing dash from prefix and leading dash from datacenter
+        local clean_prefix="${HOSTNAME_PREFIX%-}"
+        local clean_datacenter="${datacenter#-}"
+        name="${clean_prefix}-${clean_datacenter}-${country}-${sequence}"
     elif [ -n "$HOSTNAME_PREFIX" ]; then
-        name="${HOSTNAME_PREFIX}-${country}-${sequence}"
+        local clean_prefix="${HOSTNAME_PREFIX%-}"
+        name="${clean_prefix}-${country}-${sequence}"
     else
         name="Unknown-${country}-${sequence}"
     fi
+    
+    # Clean up double dashes
+    name=$(echo "$name" | sed 's/--/-/g')
     
     echo "$name"
 }
