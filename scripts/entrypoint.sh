@@ -21,4 +21,4 @@ echo -n "$TAILSCALE_AUTH_KEY" > "$AUTH_KEY_FILE"
 chmod 600 "$AUTH_KEY_FILE"
 
 export TAILSCALE_AUTH_KEY_FILE="$AUTH_KEY_FILE"
-exec /scripts/AutoDeploy.sh
+exec ./scripts/AutoDeploy.sh
