@@ -17,9 +17,9 @@ RUN mkdir -p /dev/net && \
 RUN mkdir -p /var/lib/tailscale /var/run/tailscale /tmp && \
     chmod 755 /var/lib/tailscale /var/run/tailscale
 
-# Copy scripts
-COPY AutoDeploy.sh entrypoint.sh /
-RUN chmod +x /AutoDeploy.sh /entrypoint.sh
+# Copy scripts and health server
+COPY AutoDeploy.sh entrypoint.sh healthApi.py /
+RUN chmod +x /AutoDeploy.sh /entrypoint.sh /healthApi.py
 
 # Expose health check port
 EXPOSE 10000

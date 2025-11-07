@@ -13,16 +13,80 @@ fi
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Start health server on port
+# Start health server using external Python script
 PORT="${PORT:-10000}"
 log "Starting health server on port $PORT"
-while true; do
-    read request < /dev/tcp/0.0.0.0/$PORT 2>/dev/null || continue
-    if echo "$request" | grep -q "GET /health"; then
-        echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 15\r\n\r\n{\"status\":\"ok\"}"
+
+# Use the external health server script
+if [ -f "/healthApi.py" ] && command -v python3 >/dev/null 2>&1; then
+    # Use external Python health server
+    export PORT=$PORT
+    python3 /healthApi.py &
+    HEALTH_PID=$!
+    log "Health server started with external script (PID: $HEALTH_PID)"
+else
+    # Fallback to built-in Python without external file
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c "
+import socket
+import threading
+import time
+import os
+import signal
+import sys
+
+class HealthServer:
+    def __init__(self, port=10000):
+        self.port = port
+        self.sock = None
+        
+    def handle_client(self, conn, addr):
+        try:
+            data = conn.recv(1024).decode()
+            if 'GET /health' in data:
+                response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 15\r\n\r\n{\"status\":\"ok\"}'
+                conn.send(response.encode())
+            else:
+                conn.send('HTTP/1.1 404 Not Found\r\n\r\n'.encode())
+        except:
+            pass
+        finally:
+            conn.close()
+            
+    def start(self):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(('0.0.0.0', self.port))
+            sock.listen(5)
+            
+            while True:
+                try:
+                    conn, addr = sock.accept()
+                    threading.Thread(target=self.handle_client, args=(conn, addr)).start()
+                except:
+                    time.sleep(1)
+        except Exception as e:
+            print(f'Health server error: {e}')
+            time.sleep(60)
+        finally:
+            if 'sock' in locals():
+                sock.close()
+
+try:
+    port = int(os.environ.get('PORT', '10000'))
+    server = HealthServer(port)
+    server.start()
+except KeyboardInterrupt:
+    print('Health server stopping...')
+" &
+        HEALTH_PID=$!
+        log "Health server started with builtin Python (PID: $HEALTH_PID)"
+    else
+        log "Warning: Python3 not available, health server not started"
+        HEALTH_PID=""
     fi
-done &
-HEALTH_PID=$!
+fi
 
 # Start Tailscale daemon
 log "Starting Tailscale daemon..."
