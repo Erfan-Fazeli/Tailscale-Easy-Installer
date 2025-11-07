@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Find and load .env from multiple locations
+# Find and load .env
 for env_file in /workspaces/*/\.env /workspace/.env /.env .env; do
     if [ -f "$env_file" ]; then
         echo "Loading .env from: $env_file"
@@ -10,20 +10,15 @@ for env_file in /workspaces/*/\.env /workspace/.env /.env .env; do
     fi
 done
 
-# Export environment variables so they're available to child processes
-export TAILSCALE_AUTH_KEY
-export HOSTNAME_PREFIX
-export COUNTRY_CODE_OVERRIDE
-export HTTP_PORT
+# Export environment variables
+export TAILSCALE_AUTH_KEY HOSTNAME_PREFIX COUNTRY_CODE_OVERRIDE HTTP_PORT
 
 # Check for auth key
 if [ -z "$TAILSCALE_AUTH_KEY" ]; then
     echo "ERROR: TAILSCALE_AUTH_KEY not found"
-    echo "Checked locations: /workspaces/*/.env, /workspace/.env, /.env, .env"
     echo "Get key: https://login.tailscale.com/admin/settings/keys"
     sleep infinity
 fi
 
 echo "✓ Found TAILSCALE_AUTH_KEY"
-# Run start.sh in the foreground to ensure banner displays
 /start.sh
