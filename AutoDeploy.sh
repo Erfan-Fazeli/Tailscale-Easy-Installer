@@ -3,6 +3,9 @@
 # Simple Tailscale Auto-Setup - Minimal Version
 echo "=== Starting Tailscale Auto-Setup ==="
 
+# Simple logging
+log() { echo "$(date '+%H:%M:%S') $1"; }
+
 # Get auth key directly from environment
 AUTH_KEY="${TAILSCALE_AUTH_KEY}"
 if [ -z "$AUTH_KEY" ]; then
@@ -12,10 +15,7 @@ fi
 
 # Debug auth key info (without exposing sensitive data)
 log "AutoDeploy: Auth key length: ${#AUTH_KEY}"
-log "AutoDeploy: Auth key preview: ${AUTH_KEY:0:10}..."
-
-# Simple logging
-log() { echo "$(date '+%H:%M:%S') $1"; }
+log "AutoDeploy: Auth key preview: ${AUTH_KEY:0:8}...${AUTH_KEY: -8}"
 
 # Start health server using external Python script
 PORT="${PORT:-10000}"
@@ -106,22 +106,36 @@ done
 sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
 sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
 
-# Get simple hostname
-COUNTRY=$(curl -sf --max-time 1 ipinfo.io/country 2>/dev/null || echo "XX")
+# Get hostname components
+HOSTNAME_PREFIX="${HOSTNAME_PREFIX:-erf}" # Default to 'erf' if not set
+IP_INFO=$(curl -sf --max-time 2 https://ipinfo.io/json 2>/dev/null)
+
+COUNTRY=$(echo "$IP_INFO" | jq -r '.country // "XX"' 2>/dev/null)
+REGION=$(echo "$IP_INFO" | jq -r '.region // "UnknownRegion"' 2>/dev/null)
+ORG=$(echo "$IP_INFO" | jq -r '.org // "UnknownProvider"' 2>/dev/null)
+
+# Sanitize strings for hostname
+REGION_SANITIZED=$(echo "$REGION" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]')
+ORG_SANITIZED=$(echo "$ORG" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]')
+
 SEQUENCE=$(cat /tmp/count 2>/dev/null || echo "1")
 echo $((SEQUENCE + 1)) > /tmp/count
 
 # Generate hostname
-HOSTNAME="Tail-Node-${COUNTRY}-${SEQUENCE}"
+HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${SEQUENCE}"
 
-# Connect to Tailscale - use FULL auth key exactly as provided
-# Log key length for debugging without exposing sensitive data
-log "AutoDeploy: Connecting with auth key (length: ${#AUTH_KEY} characters, preview: ${AUTH_KEY:0:8}...${AUTH_KEY: -8})"
+# Create a temporary file for the auth key
+AUTH_KEY_FILE=$(mktemp)
+echo -n "$AUTH_KEY" > "$AUTH_KEY_FILE"
+chmod 600 "$AUTH_KEY_FILE" # Ensure it's only readable by the owner
+
+# Connect to Tailscale - use auth key from file
+log "AutoDeploy: Connecting with auth key from file..."
 
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
     log "Authentication attempt $attempt/3..."
-    if tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+    if tailscale up --authkey-file="$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
         log "Authentication successful!"
         break
     else
@@ -134,6 +148,9 @@ for attempt in {1..3}; do
         fi
     fi
 done
+
+# Clean up the temporary auth key file
+rm -f "$AUTH_KEY_FILE"
 
 # Status
 IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
