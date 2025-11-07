@@ -6,9 +6,13 @@ echo "=== Starting Tailscale Auto-Setup ==="
 # Get auth key directly from environment
 AUTH_KEY="${TAILSCALE_AUTH_KEY}"
 if [ -z "$AUTH_KEY" ]; then
-    echo "ERROR: TAILSCALE_AUTH_KEY not set"
+    echo "ERROR: TAILSCALE_AUTH_KEY not set in AutoDeploy"
     exit 1
 fi
+
+# Debug auth key info (without exposing sensitive data)
+log "AutoDeploy: Auth key length: ${#AUTH_KEY}"
+log "AutoDeploy: Auth key preview: ${AUTH_KEY:0:10}..."
 
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
@@ -112,7 +116,7 @@ HOSTNAME="Tail-Node-${COUNTRY}-${SEQUENCE}"
 
 # Connect to Tailscale - use FULL auth key exactly as provided
 # Log key length for debugging without exposing sensitive data
-log "Connecting with auth key (length: ${#AUTH_KEY} characters, prefix: ${AUTH_KEY:0:4}...${AUTH_KEY: -4})"
+log "AutoDeploy: Connecting with auth key (length: ${#AUTH_KEY} characters, preview: ${AUTH_KEY:0:8}...${AUTH_KEY: -8})"
 
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
