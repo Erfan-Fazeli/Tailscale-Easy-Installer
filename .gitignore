@@ -29,3 +29,53 @@ yarn-debug.log*
 # Build outputs (if any)
 dist/
 build/
+
+# جلوگیری از ردیابی فایل‌های GitHub Actions
+/.github/
+.github/
+*.yml
+*.yaml
+workflows/
+actions/
+
+# جلوگیری از ثبت فایل‌های build
+build/
+dist/
+target/
+out/
+*.jar
+*.war
+*.ear
+*.class
+
+# جلوگیری از ثبت فایل‌های موقت
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*~
+
+# جلوگیری از ردیابی فایل‌های GitHub Actions
+/.github/
+.github/
+*.yml
+*.yaml
+workflows/
+actions/
+
+# جلوگیری از ثبت فایل‌های build
+build/
+dist/
+target/
+out/
+*.jar
+*.war
+*.ear
+*.class
+
+# جلوگیری از ثبت فایل‌های موقت
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*~
