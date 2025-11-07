@@ -2,15 +2,7 @@ version: '3.8'
 
 services:
   tailscale:
-    # Option 1: Use pre-built image from GitHub Container Registry (faster)
-    # Uncomment the line below and comment out the 'build' section
-    # image: ghcr.io/GITHUB_USERNAME/tailscale-easy-installer:latest
-
-    # Option 2: Build from local Dockerfile (default)
-    build:
-      context: .
-      dockerfile: Dockerfile
-
+    image: ghcr.io/erfan-fazeli/tailscale-easy-installer:latest
     env_file:
       - .env
 
