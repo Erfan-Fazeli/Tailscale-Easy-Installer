@@ -18,6 +18,9 @@ if [ -z "$TAILSCALE_AUTH_KEY" ]; then
     exit 1
 fi
 
+# Remove quotes if present
+TAILSCALE_AUTH_KEY=$(echo "$TAILSCALE_AUTH_KEY" | sed 's/^"//' | sed 's/"$//')
+
 # Debug auth key info (without exposing sensitive data)
 echo "✓ Found TAILSCALE_AUTH_KEY"
 echo "Auth key length: ${#TAILSCALE_AUTH_KEY}"
