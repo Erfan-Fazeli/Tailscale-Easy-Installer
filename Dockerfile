@@ -6,7 +6,6 @@ RUN apt-get update && \
         curl \
         ca-certificates \
         iptables \
-        ip6tables \
         iproute2 \
         netcat-openbsd \
         kmod \
