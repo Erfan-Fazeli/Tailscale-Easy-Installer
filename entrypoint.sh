@@ -1,15 +1,22 @@
 #!/bin/bash
 set -e
 
-# Load .env if exists
-[ -f /.env ] && source /.env
-[ -f .env ] && source .env
+# Find and load .env from multiple locations
+for env_file in /workspaces/*/\.env /workspace/.env /.env .env; do
+    if [ -f "$env_file" ]; then
+        echo "Loading .env from: $env_file"
+        source "$env_file"
+        break
+    fi
+done
 
 # Check for auth key
 if [ -z "$TAILSCALE_AUTH_KEY" ]; then
-    echo "ERROR: TAILSCALE_AUTH_KEY not found in .env file"
+    echo "ERROR: TAILSCALE_AUTH_KEY not found"
+    echo "Checked locations: /workspaces/*/.env, /workspace/.env, /.env, .env"
     echo "Get key: https://login.tailscale.com/admin/settings/keys"
     sleep infinity
 fi
 
+echo "✓ Found TAILSCALE_AUTH_KEY"
 exec /start.sh

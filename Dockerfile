@@ -18,7 +18,6 @@ RUN mkdir -p /dev/net && \
     chmod 600 /dev/net/tun 2>/dev/null || true
 
 COPY start.sh entrypoint.sh /
-COPY .env /.env
 RUN chmod +x /start.sh /entrypoint.sh
 
 EXPOSE 8080
