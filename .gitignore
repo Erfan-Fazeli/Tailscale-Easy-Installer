@@ -31,11 +31,8 @@ dist/
 build/
 
 # جلوگیری از ردیابی فایل‌های GitHub Actions
-/.github/
-.github/
 *.yml
 *.yaml
-workflows/
 actions/
 
 # جلوگیری از ثبت فایل‌های build
@@ -56,11 +53,8 @@ Thumbs.db
 *~
 
 # جلوگیری از ردیابی فایل‌های GitHub Actions
-/.github/
-.github/
 *.yml
 *.yaml
-workflows/
 actions/
 
 # جلوگیری از ثبت فایل‌های build
