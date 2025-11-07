@@ -143,43 +143,42 @@ echo $((SEQUENCE + 1)) > /tmp/count
 # Generate hostname
 HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${SEQUENCE}"
 
-# Connect to Tailscale - use auth key directly
-log "AutoDeploy: Connecting with auth key..."
+# Connect to Tailscale - try multiple authentication methods
+log "AutoDeploy: Starting authentication process..."
 
-# Save auth key to a temporary file to avoid shell escaping issues
-AUTH_KEY_FILE=$(mktemp)
-echo "$AUTH_KEY" > "$AUTH_KEY_FILE"
-log "AutoDeploy: Saved auth key to temp file: $AUTH_KEY_FILE"
+# Method 1: Create a pre-authenticated auth state
+log "AutoDeploy: Attempting pre-authentication method..."
+TS_AUTHKEY="$AUTH_KEY" tailscale up --hostname="$HOSTNAME" --advertise-exit-node --accept-routes --operator="$USER" 2>&1 | tee /tmp/tailscale_auth.log
 
-# Enhanced debugging for the authentication process
-log "AutoDeploy: Attempting authentication with saved auth key file"
-
-# Try to connect with retries and better error handling
-for attempt in {1..3}; do
-    log "Authentication attempt $attempt/3..."
-    if tailscale up --auth-key-file="$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
-        log "Authentication successful!"
-        break
+if [ $? -eq 0 ]; then
+    log "Authentication successful with pre-authentication method!"
+else
+    log "Pre-authentication failed, checking detailed output..."
+    
+    # Method 2: Try using the key with explicit environment variable
+    log "AutoDeploy: Trying explicit environment variable method..."
+    export TAILSCALE_AUTH_KEY="$AUTH_KEY"
+    tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes 2>&1 | tee /tmp/tailscale_auth2.log
+    
+    if [ $? -eq 0 ]; then
+        log "Authentication successful with environment variable method!"
     else
-        log "Authentication attempt $attempt failed"
-        # Try alternative authentication method with explicit key
-        log "AutoDeploy: Trying alternative auth method with explicit key..."
-        AUTH_KEY_RAW=$(cat "$AUTH_KEY_FILE" | tr -d '\n')
-        if tailscale up --auth-key="$AUTH_KEY_RAW" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
-            log "Authentication successful with alternative method!"
-            break
-        fi
-        if [ $attempt -lt 3 ]; then
-            log "Retrying in 2 seconds..."
-            sleep 2
+        # Method 3: Try a simplified approach
+        log "AutoDeploy: Trying simplified direct key method..."
+        tailscale up --accept-routes 2>&1 | tee /tmp/tailscale_auth3.log
+        
+        if [ $? -eq 0 ]; then
+            log "Authentication successful with simplified method!"
         else
-            log "Authentication failed after 3 attempts"
+            # Method 4: Use web authentication as fallback
+            log "AutoDeploy: Warning - Using web authentication fallback..."
+            tailscale up --hostname="$HOSTNAME" --advertise-exit-node --accept-routes 2>&1 | tee /tmp/tailscale_web_auth.log
+            if [ $? -ne 0 ]; then
+                log "Authentication failed - service will run without Tailscale VPN"
+            fi
         fi
     fi
-done
-
-# Clean up
-rm -f "$AUTH_KEY_FILE"
+fi
 
 # Status
 IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
