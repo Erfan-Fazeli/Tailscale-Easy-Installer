@@ -6,29 +6,44 @@ echo "=== Starting Tailscale Auto-Setup ==="
 # Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# Get auth key directly from environment - try multiple sources
-AUTH_KEY="${TAILSCALE_AUTH_KEY}"
-if [ -z "$AUTH_KEY" ]; then
-    # Fallback to check render environment variables directly
-    log "AutoDeploy: TAILSCALE_AUTH_KEY not found, checking environment..."
-    log "AutoDeploy: ENV vars starting with TAILSCALE:"
-    env | grep TAILSCALE | grep -v AUTH || true
-    echo "ERROR: TAILSCALE_AUTH_KEY not set in AutoDeploy"
-    exit 1
+# NEW FILE-BASED AUTHENTICATION APPROACH
+# This completely avoids environment variable issues by using Tailscale's file: prefix support
+
+# Primary method: Use auth key file created by entrypoint.sh
+if [ -n "$TAILSCALE_AUTH_KEY_FILE" ] && [ -f "$TAILSCALE_AUTH_KEY_FILE" ]; then
+    log "AutoDeploy: Using auth key from file: $TAILSCALE_AUTH_KEY_FILE"
+    AUTH_KEY_FILE="$TAILSCALE_AUTH_KEY_FILE"
+    AUTH_KEY_FROM_FILE=$(cat "$AUTH_KEY_FILE" | tr -d '\n\r')
+    log "AutoDeploy: Auth key from file - length: ${#AUTH_KEY_FROM_FILE}"
+    log "AutoDeploy: Auth key from file - first 20 chars: '${AUTH_KEY_FROM_FILE:0:20}'"
+    log "AutoDeploy: Auth key from file - last 10 chars: '${AUTH_KEY_FROM_FILE: -10}'"
+else
+    # Fallback: Create auth key file from environment variable
+    log "AutoDeploy: Creating auth key file from environment variable"
+    AUTH_KEY="${TAILSCALE_AUTH_KEY}"
+
+    if [ -z "$AUTH_KEY" ]; then
+        log "ERROR: TAILSCALE_AUTH_KEY not found in environment"
+        env | grep TAILSCALE | grep -v AUTH || true
+        exit 1
+    fi
+
+    # Create the auth key file
+    AUTH_KEY_FILE="/tmp/tailscale-authkey"
+    echo -n "$AUTH_KEY" > "$AUTH_KEY_FILE"
+    chmod 600 "$AUTH_KEY_FILE"
+
+    AUTH_KEY_FROM_FILE=$(cat "$AUTH_KEY_FILE")
+    log "AutoDeploy: Created auth key file: $AUTH_KEY_FILE"
+    log "AutoDeploy: Auth key length: ${#AUTH_KEY_FROM_FILE}"
+    log "AutoDeploy: Auth key first 20 chars: '${AUTH_KEY_FROM_FILE:0:20}'"
+    log "AutoDeploy: Auth key last 10 chars: '${AUTH_KEY_FROM_FILE: -10}'"
 fi
 
-# Enhanced debugging - show what's actually in the AUTH_KEY variable
-log "AutoDeploy: AUTH_KEY found via environment"
-log "AutoDeploy: Raw AUTH_KEY length: ${#AUTH_KEY}"
-log "AutoDeploy: Raw AUTH_KEY first 20 chars: '${AUTH_KEY:0:20}'"
-log "AutoDeploy: Raw AUTH_KEY last 10 chars: '${AUTH_KEY: -10}'"
-
-# Check if AUTH_KEY is getting truncated by environment variable processing
-if [ "${#AUTH_KEY}" -ne 61 ]; then
-    log "AutoDeploy: WARNING - Auth key length ${#AUTH_KEY} is not expected 61 characters!"
-    log "AutoDeploy: This suggests the key was truncated during processing"
-else
-    log "AutoDeploy: Auth key length is correct (61 characters)"
+# Verify auth key looks valid
+if [ "${#AUTH_KEY_FROM_FILE}" -lt 30 ]; then
+    log "ERROR: Auth key appears invalid - too short (${#AUTH_KEY_FROM_FILE} chars)"
+    exit 1
 fi
 
 # Start health server using external Python script
@@ -143,39 +158,59 @@ echo $((SEQUENCE + 1)) > /tmp/count
 # Generate hostname
 HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${SEQUENCE}"
 
-# Connect to Tailscale - try multiple authentication methods
-log "AutoDeploy: Starting authentication process..."
+# Connect to Tailscale using FILE-BASED authentication
+log "AutoDeploy: Starting Tailscale authentication with file-based method..."
+log "AutoDeploy: Using auth key file: $AUTH_KEY_FILE"
 
-# Method 1: Create a pre-authenticated auth state
-log "AutoDeploy: Attempting pre-authentication method..."
-TS_AUTHKEY="$AUTH_KEY" tailscale up --hostname="$HOSTNAME" --advertise-exit-node --accept-routes --operator="$USER" 2>&1 | tee /tmp/tailscale_auth.log
+# Method 1: Use Tailscale's native file: prefix support
+log "AutoDeploy: Method 1 - Using --auth-key with file: prefix..."
+tailscale up \
+    --auth-key="file:$AUTH_KEY_FILE" \
+    --hostname="$HOSTNAME" \
+    --advertise-exit-node \
+    --accept-routes \
+    --operator="$USER" 2>&1 | tee /tmp/tailscale_auth.log
 
-if [ $? -eq 0 ]; then
-    log "Authentication successful with pre-authentication method!"
+AUTH_RESULT=$?
+
+if [ $AUTH_RESULT -eq 0 ]; then
+    log "✓ Authentication successful with file-based method!"
 else
-    log "Pre-authentication failed, checking detailed output..."
-    
-    # Method 2: Try using the key with explicit environment variable
-    log "AutoDeploy: Trying explicit environment variable method..."
-    export TAILSCALE_AUTH_KEY="$AUTH_KEY"
-    tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes 2>&1 | tee /tmp/tailscale_auth2.log
-    
-    if [ $? -eq 0 ]; then
-        log "Authentication successful with environment variable method!"
+    log "Method 1 failed, trying Method 2..."
+
+    # Method 2: Direct authkey parameter with key content from file
+    log "AutoDeploy: Method 2 - Using --authkey with direct key from file..."
+    tailscale up \
+        --authkey="$AUTH_KEY_FROM_FILE" \
+        --hostname="$HOSTNAME" \
+        --advertise-exit-node \
+        --accept-routes \
+        --operator="$USER" 2>&1 | tee /tmp/tailscale_auth2.log
+
+    AUTH_RESULT=$?
+
+    if [ $AUTH_RESULT -eq 0 ]; then
+        log "✓ Authentication successful with direct key method!"
     else
-        # Method 3: Try a simplified approach
-        log "AutoDeploy: Trying simplified direct key method..."
-        tailscale up --accept-routes 2>&1 | tee /tmp/tailscale_auth3.log
-        
-        if [ $? -eq 0 ]; then
-            log "Authentication successful with simplified method!"
+        log "Method 2 failed, trying Method 3..."
+
+        # Method 3: Use TS_AUTHKEY environment variable with file content
+        log "AutoDeploy: Method 3 - Using TS_AUTHKEY environment variable..."
+        TS_AUTHKEY="$AUTH_KEY_FROM_FILE" tailscale up \
+            --hostname="$HOSTNAME" \
+            --advertise-exit-node \
+            --accept-routes \
+            --operator="$USER" 2>&1 | tee /tmp/tailscale_auth3.log
+
+        AUTH_RESULT=$?
+
+        if [ $AUTH_RESULT -eq 0 ]; then
+            log "✓ Authentication successful with TS_AUTHKEY method!"
         else
-            # Method 4: Use web authentication as fallback
-            log "AutoDeploy: Warning - Using web authentication fallback..."
-            tailscale up --hostname="$HOSTNAME" --advertise-exit-node --accept-routes 2>&1 | tee /tmp/tailscale_web_auth.log
-            if [ $? -ne 0 ]; then
-                log "Authentication failed - service will run without Tailscale VPN"
-            fi
+            log "All authentication methods failed!"
+            log "Error details from last attempt:"
+            tail -20 /tmp/tailscale_auth3.log
+            log "WARNING: Service will run without Tailscale VPN connection"
         fi
     fi
 fi
