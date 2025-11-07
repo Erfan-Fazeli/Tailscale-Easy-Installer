@@ -67,7 +67,7 @@ start_daemon() {
     return 0
 }
 
-# Get datacenter/cloud provider info (cached)
+# Get datacenter/cloud provider info (cached, with global timeout)
 get_datacenter_info() {
     # Check if we have cached info
     if [ -f "$DATACENTER_INFO_FILE" ]; then
@@ -75,12 +75,14 @@ get_datacenter_info() {
         return
     fi
 
+    log "Detecting cloud provider (max 10s)..."
+
     # Try to get cloud provider info from multiple sources
     local provider="Unknown"
     local region=""
-    
-    # Try AWS metadata - faster timeout (1s instead of 2s)
-    if aws_region=$(curl -sf --max-time 1 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
+
+    # Try AWS metadata - faster timeout
+    if aws_region=$(timeout 2 curl -sf --max-time 1 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
         if [ -n "$aws_region" ]; then
             provider="AWS"
             region="$aws_region"
@@ -88,7 +90,7 @@ get_datacenter_info() {
     fi
 
     # Try GCP metadata if AWS failed
-    if [ "$provider" = "Unknown" ] && gcp_zone=$(curl -sf --max-time 1 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
+    if [ "$provider" = "Unknown" ] && gcp_zone=$(timeout 2 curl -sf --max-time 1 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
         if [ -n "$gcp_zone" ]; then
             provider="GCP"
             region="$gcp_zone"
@@ -96,7 +98,7 @@ get_datacenter_info() {
     fi
 
     # Try Azure metadata if previous failed
-    if [ "$provider" = "Unknown" ] && az_region=$(curl -sf --max-time 1 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
+    if [ "$provider" = "Unknown" ] && az_region=$(timeout 2 curl -sf --max-time 1 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
         if [ -n "$az_region" ]; then
             provider="Azure"
             region="$az_region"
@@ -238,8 +240,11 @@ sysctl -w net.ipv4.ip_forward=1 2>/dev/null || \
 sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
 iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || true
 
+log "Detecting location..."
 COUNTRY=$(get_country)
+log "Detecting datacenter..."
 DATACENTER=$(get_datacenter_info)
+log "Getting sequence number..."
 SEQUENCE=$(get_next_sequence)
 HOSTNAME=$(get_hostname "$COUNTRY" "$DATACENTER" "$SEQUENCE")
 
@@ -282,3 +287,6 @@ echo "$BANNER"
 echo "$BANNER" > /tmp/tailscale-status.txt
 
 log "✓ Tailscale setup complete - services running in background"
+
+# Keep container running
+sleep infinity
