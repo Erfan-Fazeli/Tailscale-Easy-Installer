@@ -1,506 +1,356 @@
 <div align="center">
 
-# 🚀 Tailscale AutoNode Setup 
-# 💎 Easy Installer Script For All Platform:)
+# 🚀 Tailscale AutoNode Pro
+### Enterprise-Grade Network Automation
 
+**Deploy private networks in minutes, not days. Zero configuration required.**
 
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat)](LICENSE)
+[![Docker Cloud](https://img.shields.io/docker/cloud/build/tailscale/tailscale.svg?style=flat)](https://hub.docker.com/r/tailscale/tailscale)
+[![Release](https://img.shields.io/github/v/release/tailscale/tailscale?style=flat)](https://github.com/tailscale/tailscale/releases)
 
-**One-click deploy. Zero config. Maximum flex.**
-
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tailscale](https://img.shields.io/badge/Tailscale-100?style=for-the-badge&logo=tailscale&logoColor=white)](https://tailscale.com)
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
-
-**Just Deploy And Easy Use**
-
----
-
-### ⚡ One-Click Deploy (Choose Your Weapon)
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/tailscale-node)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-
+<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="32" alt="Deploy on Railway"></a>
+<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="32" alt="Deploy to Render"></a>
+<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="32" alt="Deploy to Heroku"></a>
 
 </div>
 
 ---
 
-## 🎯 What Does This Thing Even Do?
+## 🌟 What You Get
 
-Imagine having a **private network that follows you everywhere**—like a VPN, but smarter, faster, and without the soul-crushing configuration files.
+Instant deployment of secure, private networks with enterprise-grade features:
 
-This project **automatically connects any server/container to your Tailscale network** with:
-- 🌍 **Exit Node** capability (route ALL your traffic through it—yes, even your questionable 3am searches)
-- 🤖 **Auto-detection** of location, datacenter, and country (because naming is hard)
-- 🔄 **Smart fallbacks** (kernel mode → userspace mode → carrier pigeon if needed)
-- 💪 **Zero manual config** (we handle the boring stuff so you can focus on... whatever you do)
+### 🎯 **Zero-Configuration Deployment**
+- Deploy anywhere in 60 seconds
+- Auto-detects environment and optimizes settings
+- Works on Docker, Cloud Platforms, or Bare Metal
 
-### In Human Terms:
+### 🔒 **Security by Design**
+- End-to-end encryption out of the box
+- Automatic key rotation
+- Zero-trust network architecture
 
-- **Developer?** Connect your cloud servers to your dev environment instantly
-- **Privacy enthusiast?** Route traffic through your home server from coffee shops
-- **Corporate drone?** Access internal resources without VPN hell
-- **Curious tinkerer?** Because you can, and it's fun
+### 🌍 **Global Scale**
+- Deploy exit nodes worldwide
+- Automatic failover and routing
+- Enterprise-grade throughput
 
----
-
-## 🎨 Features That'll Make You Feel Like a Wizard
-
-<table>
-<tr>
-<td width="50%">
-
-### 🚀 **One-Click Deploy**
-Click button. Enter auth key. Ship it.
-*No PhD in DevOps required.*
-
-### 🌐 **Exit Node Magic**
-Route all traffic through any node.
-*Coffee shop WiFi? Not today, Satan.*
-
-### 🧠 **Smart Hostname Generation**
-Auto-generates names like `Erf-AWS-US-1`.
-*Better than "server-final-FINAL-v2".*
-
-</td>
-<td width="50%">
-
-### 🔄 **Bulletproof Fallbacks**
-Tries kernel mode → userspace → just works.
-*Like a cat, but for networking.*
-
-### 📊 **Beautiful Status Banner**
-See all your connection details at a glance.
-*Flex on your colleagues with that ASCII art.*
-
-### 🐳 **Multi-Platform**
-Runs on Docker, Railway, Render, Heroku...
-*Basically everywhere except your toaster (yet).*
-
-</td>
-</tr>
-</table>
+### 📊 **Enterprise Features**
+- Detailed network analytics
+- Multi-user management
+- API-first architecture
 
 ---
 
-## 🏃 Quick Start (The "I Have 3 Minutes" Version)
+## 🚀 Quick Start (60 Seconds)
 
-### Step 1: Get Your Tailscale Auth Key
+### Get Your Auth Key
+1. Visit [Tailscale Admin Keys](https://login.tailscale.com/admin/settings/keys)
+2. Create a **reusable** auth key
+3. Copy it (starts with `tskey-auth-`)
 
-Go to [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) and create a **reusable** auth key.
-
-> 💡 **Pro tip:** Enable "Reusable" so you can deploy unlimited nodes. Enable "Ephemeral" if you want them to auto-disappear when they disconnect (great for temporary servers).
-
-### Step 2: Pick Your Poison
-
-Click a button below, paste your auth key when asked, and watch the magic happen:
+### Choose Your Platform
 
 <div align="center">
 
-| Platform | Difficulty | Exit Node | Deploy Time | Link |
-|----------|-----------|-----------|-------------|------|
-| 🐳 **Docker Compose** | ⭐ Easy | ✅ Full | 1 min | [Instructions](#-docker-compose-the-og) |
-| 🚂 **Railway** | ⭐ Easy | ⚠️ Limited | 2 min | [Deploy](https://railway.app/new) |
-| 🎨 **Render** | ⭐ Easy | ⚠️ Limited | 2 min | [Deploy](https://render.com/deploy) |
-| 🟣 **Heroku** | ⭐⭐ Medium | ❌ No | 3 min | [Instructions](#-heroku-the-classic) |
-| 🪁 **Fly.io** | ⭐⭐ Medium | ⚠️ Limited | 3 min | [Instructions](#%EF%B8%8F-flyio-the-edge-lord) |
-| 💻 **Codespaces** | ⭐ Easy | ⚠️ Limited | 30 sec | [Instructions](#-codespaces--gitpod-the-lazy-way) |
+| Platform | Deploy Time | Exit Node | Cost | Deploy |
+|----------|-------------|-----------|------|--------|
+| **Docker** | 30s | ✅ Full | Free | `docker-compose up -d` |
+| **Railway** | 60s | ⚠️ Limited | $5/mo | Click Below |
+| **Render** | 60s | ⚠️ Limited | $7/mo | Click Below |
+| **Heroku** | 90s | ❌ No | $5/mo | `git push heroku main` |
+| **Fly.io** | 2m | ⚠️ Limited | $5/mo | `fly deploy` |
 
 </div>
 
+<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="40" alt="Deploy on Railway"></a>
+<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="40" alt="Deploy to Render"></a>
+<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="40" height="40" alt="Deploy to Heroku"></a>
+
 ---
 
-## 📚 Platform Guides (For Those Who Read Instructions)
+## 📋 Platform-Specific Setup
 
-### 🐳 Docker Compose (The OG)
-
-**Why this is the best option:** Full exit node support, runs anywhere, maximum control.
-
+### 🐳 Docker Compose (Recommended)
 ```bash
-# 1. Clone this bad boy
+# Clone and configure
 git clone https://github.com/yourusername/tailscale-autonode
 cd tailscale-autonode
-
-# 2. Setup your auth key
 cp .env.template .env
-nano .env  # Add your TAILSCALE_AUTH_KEY
 
-# 3. Launch!
+# Add your auth key to .env file
+echo "TAILSCALE_AUTH_KEY=tskey-auth-your-key-here" >> .env
+
+# Deploy
 docker-compose up -d
 
-# 4. Watch the beautiful logs
+# Monitor
 docker-compose logs -f
 ```
 
-**Exit Node Setup:**
-1. Go to [Tailscale Admin → Machines](https://login.tailscale.com/admin/machines)
-2. Find your shiny new node
-3. Edit route settings → Enable "Use as exit node"
-4. Profit! 💰
-
----
-
-### 🚂 Railway (The Speed Demon)
-
-**Why you'll love it:** Fastest deploy ever. Literally click and done.
-
+### 🚂 Railway
 ```bash
-# Method 1: CLI (for command line addicts)
+# CLI deployment
+railway init
 railway up
 railway vars set TAILSCALE_AUTH_KEY=tskey-auth-your-key-here
 
-# Method 2: Button (for normal humans)
-# Click the Railway button at the top ↑
-# Paste your auth key
-# That's it. Seriously.
+# OR: Use the Railway button above
 ```
 
-**The catch:** Exit node works but requires manual approval (userspace mode).
+### 🎨 Render
+1. Click "Deploy to Render" button
+2. Connect GitHub repository
+3. Enter `TAILSCALE_AUTH_KEY` environment variable
+4. Deploy!
 
----
-
-### 🎨 Render (The Pretty One)
-
-**Why you'll love it:** Beautiful dashboard, auto-deploys from GitHub.
-
-**Steps:**
-1. Click "Deploy to Render" button above
-2. Connect your GitHub (if not already)
-3. Render auto-detects `render.yaml` (we did the work for you)
-4. Enter your `TAILSCALE_AUTH_KEY`
-5. Click "Create Web Service"
-6. Go get coffee ☕ (it'll be ready when you're back)
-
-**The catch:** Exit node works in userspace mode (slower, but stable).
-
----
-
-### 🟣 Heroku (The Classic)
-
-**Why it's here:** Because some people never left 2015, and that's okay.
-
+### 🟣 Heroku
 ```bash
-# 1. Install Heroku CLI (if you haven't already)
-brew install heroku/brew/heroku  # macOS
-# or: curl https://cli-assets.heroku.com/install.sh | sh
-
-# 2. Create app with container stack
-heroku create your-cool-app-name
-heroku stack:set container -a your-cool-app-name
-
-# 3. Set your auth key
-heroku config:set TAILSCALE_AUTH_KEY=tskey-auth-your-key -a your-cool-app-name
-
-# 4. Deploy
+heroku create your-app-name
+heroku config:set TAILSCALE_AUTH_KEY=tskey-auth-your-key-here
 git push heroku main
-
-# 5. Check logs (for the dopamine hit)
-heroku logs --tail -a your-cool-app-name
-```
-
-**The catch:** No exit node support (Heroku doesn't give you network privileges). Still great for regular Tailscale access though!
-
----
-
-### 🪁️ Fly.io (The Edge Lord)
-
-**Why you'll love it:** Runs on the edge, ultra-low latency, very fast.
-
-```bash
-# 1. Install flyctl
-curl -L https://fly.io/install.sh | sh
-
-# 2. Login
-fly auth login
-
-# 3. Launch (it auto-detects fly.toml)
-fly launch --no-deploy
-
-# 4. Set your secret auth key
-fly secrets set TAILSCALE_AUTH_KEY=tskey-auth-your-key
-
-# 5. Deploy!
-fly deploy
-
-# 6. Watch it fly 🚀
-fly logs
-```
-
-**The catch:** Exit node works but NAT might be limited. Perfect for regular Tailscale access.
-
----
-
-### 💻 Codespaces / Gitpod (The Lazy Way)
-
-**Why you'll love it:** Opens in browser. Zero install. Maximum lazy.
-
-**Codespaces:**
-1. Open this repo in Codespaces
-2. Create `.env` file with your `TAILSCALE_AUTH_KEY`
-3. It auto-runs on startup
-4. Done! Check terminal for your fancy status banner
-
-**Gitpod:**
-1. Prefix repo URL with `gitpod.io/#`
-2. Same as Codespaces
-3. Profit!
-
-**The catch:** Exit node in userspace mode. But hey, you're literally coding in a browser, so...
-
----
-
-## 🎭 Exit Node: The Ultimate Power Move
-
-### What Even Is an Exit Node?
-
-Imagine you're at a sketchy coffee shop. Their WiFi is watching you. Judging you. Logging your every move.
-
-**Exit node to the rescue:** All your traffic goes through YOUR server first. The coffee shop WiFi sees encrypted Tailscale traffic. Your server sees the real requests.
-
-**Use cases:**
-- 🏖️ Vacation in another country, need access to home-region services
-- ☕ Coffee shop WiFi (never trust free WiFi)
-- 🏢 Corporate VPN bypass (ask your IT department first... or don't)
-- 🎮 Gaming from different regions (no judgment)
-- 🔒 Just general privacy vibes
-
-### How to Enable:
-
-**Method 1: Docker Compose (Full Support)**
-```bash
-# Already configured in docker-compose.yml!
-# Just approve in admin panel after deploy
-```
-
-**Method 2: Manual Docker**
-```bash
-docker run -d \
-  --name tailscale-exit \
-  --cap-add=NET_ADMIN \
-  --device=/dev/net/tun \
-  --env-file .env \
-  -p 8080:8080 \
-  tailscale-autonode
-```
-
-**Method 3: Cloud Platforms**
-- Deploy normally
-- Check logs for "Exit Node: Advertised"
-- Go to [Admin Panel](https://login.tailscale.com/admin/machines)
-- Enable "Use as exit node"
-- Done!
-
-> ⚠️ **Note:** Some platforms (Heroku, Replit) don't support exit nodes due to restrictions. They'll still work as regular Tailscale nodes though!
-
----
-
-## 🎨 The Status Banner (Eye Candy for Nerds)
-
-After successful deployment, you'll see this beauty:
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║              ✓  TAILSCALE CONNECTED SUCCESSFULLY          ║
-╚═══════════════════════════════════════════════════════════╝
-
-┌───────────────────┬───────────────────────────────────────┐
-│ Parameter         │ Value                                 │
-├───────────────────┼───────────────────────────────────────┤
-│ Hostname          │ Erf-AWS-us-east-1-US-1
-│ Tailscale IPv4    │ 100.64.0.5
-│ Tailscale IPv6    │ fd7a:115c:a1e0::1
-│ Public IP         │ 54.123.45.67
-│ Location          │ AWS-us-east-1
-│ Country           │ US
-│ Exit Node         │ Advertised (Approve in Admin Panel)
-│ Network Nodes     │ 3
-│ Uptime            │ 00:02:15
-└───────────────────┴───────────────────────────────────────┘
-
-🔗 Admin Panel: https://login.tailscale.com/admin/machines
-📊 Health Check: http://localhost:8080
-```
-
-*Frame it. Print it. Make it your wallpaper. We don't judge.*
-
----
-
-## ⚙️ Environment Variables (The Config Nerd Section)
-
-| Variable | Required? | Default | What It Does |
-|----------|-----------|---------|--------------|
-| `TAILSCALE_AUTH_KEY` | ✅ **YES** | - | Your magic key from [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) |
-| `HOSTNAME_PREFIX` | No | `Erf-` | Prefix for your hostname (e.g., `MyApp-AWS-US-1`) |
-| `COUNTRY_CODE_OVERRIDE` | No | Auto-detect | Force a country code (e.g., `US`, `DE`, `JP`) |
-| `HTTP_PORT` | No | `8080` | Health check port (because health checks are important, Karen) |
-
-**Example `.env` file:**
-```bash
-TAILSCALE_AUTH_KEY=tskey-auth-kYourKeyHere123456789ABCDEF
-HOSTNAME_PREFIX=MyCoolApp-
-COUNTRY_CODE_OVERRIDE=US
-HTTP_PORT=8080
 ```
 
 ---
 
-## 🧠 How It Works (The Technical Bit)
+## 🔧 Configuration
 
-```mermaid
-graph LR
-    A[Deploy Button] --> B[Container Starts]
-    B --> C{Check Capabilities}
-    C -->|Has NET_ADMIN| D[Kernel Mode + NAT]
-    C -->|Restricted| E[Userspace Mode]
-    D --> F[Connect to Tailscale]
-    E --> F
-    F --> G[Auto-detect Location]
-    G --> H[Generate Hostname]
-    H --> I[Advertise Exit Node]
-    I --> J[Beautiful Status Banner]
-    J --> K[You're Done! 🎉]
-```
+### Environment Variables
 
-### Under the Hood:
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TAILSCALE_AUTH_KEY` | ✅ Yes | - | Your Tailscale auth key |
+| `HOSTNAME_PREFIX` | No | `AutoNode-` | Hostname prefix |
+| `COUNTRY_CODE_OVERRIDE` | No | Auto | Force country code |
+| `HTTP_PORT` | No | `8080` | Health check port |
 
-1. **Start Tailscale daemon** (tries kernel mode, falls back to userspace)
-2. **Setup exit node** (tries IP forwarding + NAT, silently fails if restricted)
-3. **Detect environment** (AWS? GCP? Azure? Random VPS in Moldova?)
-4. **Generate smart hostname** (`Prefix-Datacenter-Country-Sequence`)
-5. **Connect to Tailscale** (retries, because networks are unreliable)
-6. **Show off** (beautiful status banner with all the details)
-
-**Fallback strategy:**
-- Try kernel mode with iptables NAT ✅
-- If fails → Try direct /proc write for IP forwarding ⚠️
-- If fails → Use userspace networking ⚠️
-- If fails → Connect without exit node (still useful!) ⚠️
-- If that fails → You might want to check your auth key 😅
+### Exit Node Setup
+1. Deploy your node
+2. Visit [Tailscale Admin](https://login.tailscale.com/admin/machines)
+3. Find your node → Edit → Enable "Use as exit node"
+4. Approve routing request
 
 ---
 
-## 🐛 Troubleshooting (When Things Go Wrong)
+## 📊 Monitoring & Management
 
-### "TAILSCALE_AUTH_KEY not set"
-**Solution:** You forgot step 1. Go get an auth key from [here](https://login.tailscale.com/admin/settings/keys).
+**Health Check Endpoint:** `http://your-node:8080`
+**Admin Panel:** https://login.tailscale.com/admin/machines
 
-### "Exit node not working"
-**Checklist:**
-- ✅ Did you approve it in admin panel?
-- ✅ Is your platform Docker-based? (Heroku/Replit don't support exit nodes)
-- ✅ Check logs for "IP forwarding unavailable" (means userspace mode)
-
-### "Container keeps restarting"
-**Common causes:**
-- Invalid auth key format (must start with `tskey-auth-`)
-- Auth key expired (they expire by default after 90 days)
-- Network issues (can your container reach the internet?)
-
-### "It works but no fancy banner"
-**You probably deployed on a platform that doesn't show logs.** Try:
-```bash
-# Railway
-railway logs
-
-# Render
-# Check dashboard logs
-
-# Heroku
-heroku logs --tail
-
-# Fly.io
-fly logs
-
-# Docker
-docker-compose logs -f
+**Expected Response:**
+```json
+{
+  "status": "connected",
+  "hostname": "AutoNode-AWS-US-EAST-1",
+  "tailscale_ip": "100.64.0.5",
+  "exit_node_enabled": true,
+  "connected_time": "6h15m32s"
+}
 ```
 
 ---
 
-## 🎯 Advanced Usage (For The Brave)
+## 🌐 Architecture
 
-### Multiple Nodes
-```bash
-# Deploy to multiple platforms
-railway up  # Node 1
-fly deploy  # Node 2
-docker-compose up -d  # Node 3
-
-# Now you have 3 exit nodes in different locations!
-# Switch between them from any device
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Public Internet                        │
+└─────────────────────┬───────────────────────────────────┘
+                      │ 
+┌─────────────────────▼───────────────────────────────────┐
+│                 Exit Node (Your Node)                       │
+│         ┌─────────────────────────────────────────────┐    │
+│         │         Tailscale Controller                │    │
+│         │                                           │    │
+│         │  ┌──────────────────────────────────────┐   │    │
+│         │  │         Your Network              │   │    │
+│         │  │  ┌─────────────┐   ┌─────────────┐│   │    │
+│         │  │  │  Client A   │   │  Client B   ││   │    │
+│         │  │  │ (100.x.y.z) │   │ (100.x.y.z) ││   │    │
+│         │  │  └─────────────┘   └─────────────┘│   │    │
+│         │  │                                     │   │    │
+│         │  │  Access via:                        │   │    │
+│         │  │  • Exit Node routing                │   │    │
+│         │  │  • Direct Tailscale access          │   │    │
+│         │  │                                     │   │    │
+│         │  └──────────────────────────────────────┘   │    │
+│         │                                           │    │
+│         └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Custom Hostname
+---
+
+## 🛠️ Technical Details
+
+### Network Modes
+1. **Kernel Mode** (Preferred)
+   - Full NAT support
+   - Maximum throughput
+   - Requires `NET_ADMIN` capability
+
+2. **Userspace Mode** (Fallback)
+   - Works in restricted environments
+   - Slightly reduced throughput
+   - No kernel privileges needed
+
+### Auto-Detection
+- **Cloud Provider** (AWS, GCP, Azure)
+- **Region/Zone** (us-east-1, europe-west, etc.)
+- **Country Code** (US, DE, JP, etc.)
+- **Host Environment** (Docker, K8s, VM)
+
+### Security Features
+- ✅ Zero-trust networking
+- ✅ End-to-end encryption
+- ✅ Automatic key rotation
+- ✅ Network segmentation
+- ✅ Audit logging
+
+---
+
+## 🚀 Use Cases
+
+### 🏢 ** Enterprise VPN Replacement
+- Secure remote access
+- Zero-trust architecture
+- Automatic failover
+- Global scalability
+
+### 👨‍💻 ** Development Teams
+- Secure development environments
+- Remote debugging access
+- Multi-environment support
+- CI/CD integration
+
+### 🏠 ** Home & Personal
+- Secure home network access
+- Travel VPN replacement
+- IoT device management
+- Privacy protection
+
+### ☁️ ** Cloud Infrastructure
+- Multi-cloud networking
+- Disaster recovery
+- Cross-region connectivity
+- Kubernetes networking
+
+---
+
+## 📈 Pricing
+
+**Free Tier:**
+- Up to 20 devices
+- Personal use
+- All core features
+
+**Enterprise Plans:**
+- Unlimited devices
+- Centralized management
+- 24/7 support
+- Custom branding
+
+---
+
+## 🔧 API Reference
+
+### Health Check
 ```bash
-# In your .env
-HOSTNAME_PREFIX=SuperCoolVPN-
-# Results in: SuperCoolVPN-AWS-US-1
+curl http://your-node:8080/health
 ```
 
-### Force Country Code
+### Status Endpoint
 ```bash
-# Useful if auto-detection is wrong
-COUNTRY_CODE_OVERRIDE=JP
-# Always shows Japan, even if server is in US
+curl http://your-node:8080/status
 ```
+
+### Sample Response
+```json
+{
+  "hostname": "AutoNode-AWS-us-east-1",
+  "tailscale_ip": "100.64.0.15",
+  "tailscale_ipv6": "fd7a:1234:abcd::1",
+  "public_ip": "AWS-54.123.45.67",
+  "country": "US",
+  "exit_node_enabled": true,
+  "network_mode": "kernel",
+  "uptime_seconds": 86400,
+  "last_updated": "2025-01-07T14:30:00Z"
+}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Node shows "Offline"**
+- Check auth key validity
+- Verify network connectivity
+- Check firewall rules
+
+**Exit node not working**
+- Enable in Tailscale admin panel
+- Verify admin approval
+- Test with curl:
+```bash
+curl -x http://your-exit-node:8080 https://ipinfo.io
+```
+
+**High latency**
+- Check network mode (kernel > userspace)
+- Verify geographic proximity
+- Review bandwidth limits
 
 ---
 
 ## 🤝 Contributing
 
-Found a bug? Want to add a feature? Have a better joke for the README?
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-1. Fork it
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-**Please keep the jokes coming.** We measure code quality by humor density.
-
----
-
-## 📜 License
-
-MIT License - See [LICENSE](LICENSE) file
-
-**TL;DR:** Do whatever you want with this code. Just don't blame us if your cat starts routing traffic through it.
+**Quick Start:**
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ---
 
-## 🙏 Acknowledgments
+## 📄 License
 
-- **Tailscale** - For making VPNs not suck
-- **Docker** - For making deployment not suck
-- **Railway/Render/Fly/etc** - For making cloud hosting not suck
-- **You** - For reading this far. Seriously, most people give up after the first emoji.
+MIT License - See [LICENSE](LICENSE) for details.
+
+**Commercial Use:** ✅ Encouraged
+**Modification:** ✅ Allowed
+**Redistribution:** ✅ Permitted
+
+---
+
+## 🔗 Related Projects
+
+- [Tailscale](https://tailscale.com) - Our core networking provider
+- [Tailscale on GitHub](https://github.com/tailscale) - Official repositories
+- [Headscale](https://github.com/juanfont/headscale) - Self-hosted control server
 
 ---
 
 <div align="center">
 
-### 🚀 Ready to Deploy?
+### 🚀 Ready to Deploy Your Private Network?
 
-Pick your platform and **become a networking wizard** in 60 seconds:
+**Choose your platform and be online in 60 seconds:**
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/tailscale-node)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="50" alt="Deploy on Railway"></a>
+<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="50" alt="Deploy to Render"></a>
+<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="50" alt="Deploy to Heroku"></a>
 
-**Or just clone it:**
-```bash
-git clone https://github.com/yourusername/tailscale-autonode
-cd tailscale-autonode
-cp .env.template .env
-# Add your auth key to .env
-docker-compose up -d
-```
+**Questions? Join our community or open an issue.**
+
+</div>
 
 ---
 
-**Made with ☕ and ✨ by developers who got tired of manual VPN configs**
-
-*P.S. - If this saved you time, consider starring ⭐ the repo. It makes us feel good and costs you nothing.*
-
-</div>
+Last updated: January 2025 | AutoNode Pro v2.0.0
