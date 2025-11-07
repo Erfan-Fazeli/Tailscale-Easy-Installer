@@ -51,7 +51,7 @@ start_daemon() {
 
     # For Codespaces/containers, directly use userspace mode
     log "Starting in userspace networking mode (optimal for containers)..."
-    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock >/dev/null 2>&1 &
     local pid=$!
 
     # Wait for daemon to be ready (faster check with 0.5s intervals)
@@ -75,9 +75,7 @@ get_datacenter_info() {
         return
     fi
 
-    log "Detecting cloud provider (max 10s)..."
-
-    # Try to get cloud provider info from multiple sources
+    # Try to get cloud provider info from multiple sources (silent mode)
     local provider="Unknown"
     local region=""
 
@@ -133,9 +131,7 @@ get_datacenter_info() {
     # Cache the result
     echo "$result" > "$DATACENTER_INFO_FILE"
     
-    # Return without any additional output
     echo "$result"
-    return
 }
 
 # Detect country code (faster)
@@ -243,8 +239,7 @@ iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || tru
 log "Detecting location..."
 COUNTRY=$(get_country)
 log "Detecting datacenter..."
-DATACENTER=$(get_datacenter_info 2>/dev/null)
-DATACENTER=$(echo "$DATACENTER" | tail -1 | tr -d '\n')
+DATACENTER=$(get_datacenter_info)
 log "Getting sequence number..."
 SEQUENCE=$(get_next_sequence)
 HOSTNAME=$(get_hostname "$COUNTRY" "$DATACENTER" "$SEQUENCE")
