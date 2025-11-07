@@ -25,5 +25,5 @@ if [ -z "$TAILSCALE_AUTH_KEY" ]; then
 fi
 
 echo "✓ Found TAILSCALE_AUTH_KEY"
-# Run AutoDeploy.sh in the foreground to ensure banner displays
-/AutoDeploy.sh
+# Run AutoDeploy.sh in the foreground with full output
+exec /AutoDeploy.sh

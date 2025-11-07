@@ -51,7 +51,7 @@ start_daemon() {
 
     # For Codespaces/containers, directly use userspace mode
     log "Starting in userspace networking mode (optimal for containers)..."
-    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock 2>&1 | sed 's/^/  [tailscaled] /' &
+    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
     local pid=$!
 
     # Wait for daemon to be ready (faster check with 0.5s intervals)
@@ -288,5 +288,13 @@ echo "$BANNER" > /tmp/tailscale-status.txt
 
 log "✓ Tailscale setup complete - services running in background"
 
-# Keep container running
-sleep infinity
+# Keep container running with visible output
+echo "✅ Tailscale setup complete - keeping container alive..."
+echo "📊 All services are running in background"
+echo "🔍 You can check status with: docker logs <container-id>"
+
+# استفاده از حلقه برای نگه داشتن container با خروجی زنده
+while true; do
+    sleep 30
+    echo "[$(date +%H:%M:%S)] Tailscale services running - $(tailscale status 2>/dev/null | head -1 || echo 'Status unknown')"
+done
