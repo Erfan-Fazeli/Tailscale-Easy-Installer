@@ -1,5 +1,28 @@
 {
   "name": "Tailscale Auto Node",
-  "description": "Auto-connect to Tailscale network - Configure .env file before deploy",
-  "stack": "container"
+  "description": "Auto-connect to Tailscale network with exit node support",
+  "stack": "container",
+  "env": {
+    "TAILSCALE_AUTH_KEY": {
+      "description": "Get from https://login.tailscale.com/admin/settings/keys",
+      "required": true
+    },
+    "HOSTNAME_PREFIX": {
+      "description": "Prefix for hostname (e.g., MyApp-)",
+      "value": "Heroku-",
+      "required": false
+    },
+    "HTTP_PORT": {
+      "description": "Health check port",
+      "value": "8080",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": []
 }

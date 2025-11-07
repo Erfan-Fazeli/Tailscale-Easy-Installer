@@ -4,6 +4,10 @@ primary_region = "iad"
 [build]
   dockerfile = "./Dockerfile"
 
+[env]
+  HOSTNAME_PREFIX = "Fly-"
+  HTTP_PORT = "8080"
+
 [http_service]
   internal_port = 8080
   force_https = false

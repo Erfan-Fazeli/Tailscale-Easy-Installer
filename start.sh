@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-AUTH_KEY="${TAILSCALE_AUTH_KEY:-}"
+AUTH_KEY="${TAILSCALE_AUTH_KEY:-${TS_AUTHKEY:-}}"
 HOSTNAME_PREFIX="${HOSTNAME_PREFIX:-}"
 COUNTRY_CODE_OVERRIDE="${COUNTRY_CODE_OVERRIDE:-}"
 HTTP_PORT="${HTTP_PORT:-8080}"
@@ -13,6 +13,12 @@ HOSTNAME_COUNT_FILE="/tmp/hostname_counts.txt"
 log() { echo "[$(date +%H:%M:%S)] $1"; }
 warn() { echo "[WARN] $1"; }
 err() { echo "[ERROR] $1" >&2; exit 1; }
+
+# Try to get auth key from multiple sources (for one-click deploy)
+if [ -z "$AUTH_KEY" ]; then
+    [ -f /run/secrets/tailscale_key ] && AUTH_KEY=$(cat /run/secrets/tailscale_key) && log "Using mounted secret"
+    [ -z "$AUTH_KEY" ] && [ -f /secrets/TAILSCALE_AUTH_KEY ] && AUTH_KEY=$(cat /secrets/TAILSCALE_AUTH_KEY)
+fi
 
 # Validate auth key
 [ -z "$AUTH_KEY" ] && err "TAILSCALE_AUTH_KEY not set. Get one at: https://login.tailscale.com/admin/settings/keys"
@@ -201,25 +207,23 @@ get_hostname() {
 connect() {
     local hostname="$1"
 
-    # Try with exit node first
-    log "Attempting to connect as exit node..."
-    for i in {1..2}; do
+    # Try as exit node (2 attempts)
+    for i in 1 2; do
         if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --advertise-exit-node --accept-routes --timeout=30s; then
             log "✓ Connected as exit node"
             return 0
         fi
-        warn "Exit node attempt $i failed, retrying..."
-        sleep 2
+        [ $i -eq 1 ] && sleep 2
     done
 
-    # Fallback: connect without exit node
-    log "Exit node mode unavailable, connecting as regular client..."
+    # Fallback: regular mode
+    warn "Exit node failed, connecting as regular client..."
     if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --accept-routes --timeout=30s; then
-        log "✓ Connected as regular client"
+        warn "Connected without exit node (approve manually in admin console)"
         return 0
-    else
-        err "Failed to connect to Tailscale network"
     fi
+
+    err "Connection failed"
 }
 
 # Cleanup on exit
@@ -237,9 +241,13 @@ log "Health server started on port $HTTP_PORT"
 
 start_daemon
 
-# Enable IP forwarding (silently fails in restricted environments)
-sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 && log "IP forwarding enabled" || log "IP forwarding not available (restricted environment)"
-sysctl -w net.ipv6.conf.all.forwarding=1 >/dev/null 2>&1 || true
+# Setup exit node (with fallbacks for restricted environments)
+log "Setting up exit node..."
+sysctl -w net.ipv4.ip_forward=1 2>/dev/null || \
+  echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || \
+  log "IP forwarding unavailable (userspace mode)"
+sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
+iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || true
 
 COUNTRY=$(get_country)
 DATACENTER=$(get_datacenter_info)
@@ -251,7 +259,39 @@ log "Datacenter: $DATACENTER"
 log "Hostname: $HOSTNAME"
 
 connect "$HOSTNAME"
-log "Connected! IP: $(tailscale ip -4 2>/dev/null || echo 'pending')"
 
-echo "=== Setup complete! ==="
+# Success banner with detailed info
+if tailscale status >/dev/null 2>&1; then
+    TS_IP4=$(tailscale ip -4 2>/dev/null || echo "N/A")
+    TS_IP6=$(tailscale ip -6 2>/dev/null || echo "N/A")
+    PUBLIC_IP=$(curl -sf --max-time 3 ifconfig.me 2>/dev/null || echo "N/A")
+    NODES=$(tailscale status 2>/dev/null | grep -c "^[0-9]" || echo "0")
+    UPTIME=$(ps -p $$ -o etime= | tr -d ' ' || echo "N/A")
+
+    echo ""
+    echo -e "\033[1;32m╔═══════════════════════════════════════════════════════════╗\033[0m"
+    echo -e "\033[1;32m║              ✓  TAILSCALE CONNECTED SUCCESSFULLY          ║\033[0m"
+    echo -e "\033[1;32m╚═══════════════════════════════════════════════════════════╝\033[0m"
+    echo ""
+    echo -e "\033[1;37m┌───────────────────┬───────────────────────────────────────┐\033[0m"
+    echo -e "\033[1;37m│\033[0m \033[1;36mParameter\033[0m         \033[1;37m│\033[0m \033[1;33mValue\033[0m                                 \033[1;37m│\033[0m"
+    echo -e "\033[1;37m├───────────────────┼───────────────────────────────────────┤\033[0m"
+    echo -e "\033[1;37m│\033[0m Hostname          \033[1;37m│\033[0m \033[1;33m$HOSTNAME\033[0m"
+    echo -e "\033[1;37m│\033[0m Tailscale IPv4    \033[1;37m│\033[0m \033[1;32m$TS_IP4\033[0m"
+    echo -e "\033[1;37m│\033[0m Tailscale IPv6    \033[1;37m│\033[0m \033[0;90m$TS_IP6\033[0m"
+    echo -e "\033[1;37m│\033[0m Public IP         \033[1;37m│\033[0m \033[0;37m$PUBLIC_IP\033[0m"
+    echo -e "\033[1;37m│\033[0m Location          \033[1;37m│\033[0m \033[1;35m$DATACENTER\033[0m"
+    echo -e "\033[1;37m│\033[0m Country           \033[1;37m│\033[0m \033[1;35m$COUNTRY\033[0m"
+    echo -e "\033[1;37m│\033[0m Exit Node         \033[1;37m│\033[0m \033[1;31mAdvertised (Approve in Admin Panel)\033[0m"
+    echo -e "\033[1;37m│\033[0m Network Nodes     \033[1;37m│\033[0m \033[1;36m$NODES\033[0m"
+    echo -e "\033[1;37m│\033[0m Uptime            \033[1;37m│\033[0m \033[0;37m$UPTIME\033[0m"
+    echo -e "\033[1;37m└───────────────────┴───────────────────────────────────────┘\033[0m"
+    echo ""
+    echo -e "\033[1;34m🔗 Admin Panel:\033[0m \033[4;36mhttps://login.tailscale.com/admin/machines\033[0m"
+    echo -e "\033[1;34m📊 Health Check:\033[0m \033[4;36mhttp://localhost:$HTTP_PORT\033[0m"
+    echo ""
+else
+    echo "=== Setup complete! ==="
+fi
+
 wait

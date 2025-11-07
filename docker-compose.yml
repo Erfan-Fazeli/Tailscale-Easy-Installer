@@ -7,6 +7,13 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+
+    # Exit node requirements
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
     ports:
       - "8080:8080"
     volumes:
