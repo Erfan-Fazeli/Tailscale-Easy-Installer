@@ -165,89 +165,91 @@ log "AutoDeploy: Auth key from file (for verification): '${AUTH_KEY_FROM_FILE:0:
 
 # Method 1: Direct authkey parameter with properly quoted key from file
 log "AutoDeploy: Method 1 - Using --authkey with direct key from file..."
-tailscale up \
+timeout 10 tailscale up \
     --authkey="${AUTH_KEY_FROM_FILE}" \
     --hostname="$HOSTNAME" \
     --advertise-exit-node \
     --accept-routes \
+    --timeout=5s \
     --operator="$USER" > /tmp/tailscale_auth1.log 2>&1
 
-# Use PIPESTATUS to get the actual exit code of tailscale, not tee/redirect
 AUTH_RESULT=$?
 
 # Check for error messages in the output
-if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth1.log; then
+if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth1.log; then
     log "✓ Authentication successful with direct key method!"
 else
-    log "Method 1 failed (exit code: $AUTH_RESULT), trying Method 2..."
-    if grep -qi "error" /tmp/tailscale_auth1.log; then
+    log "Method 1 failed (exit code: $AUTH_RESULT)"
+    if grep -Ei "error|invalid" /tmp/tailscale_auth1.log; then
         log "Error found in output:"
-        grep -i "error" /tmp/tailscale_auth1.log | head -3
+        grep -Ei "error|invalid" /tmp/tailscale_auth1.log | head -3
     fi
 
-    # Method 2: Use TS_AUTHKEY environment variable
-    log "AutoDeploy: Method 2 - Using TS_AUTHKEY environment variable..."
-    TS_AUTHKEY="${AUTH_KEY_FROM_FILE}" tailscale up \
+    # CRITICAL: Check if the auth key itself might be expired or invalid
+    if grep -qi "invalid key" /tmp/tailscale_auth1.log; then
+        log "⚠️  IMPORTANT: The auth key appears to be invalid or expired!"
+        log "⚠️  Please check your Tailscale admin console and regenerate the auth key"
+        log "⚠️  Make sure to create a reusable auth key with appropriate expiration"
+    fi
+
+    # Method 2: Try without operator flag (might be causing issues)
+    log "AutoDeploy: Method 2 - Simplified approach without operator flag..."
+    timeout 10 tailscale up \
+        --authkey="${AUTH_KEY_FROM_FILE}" \
         --hostname="$HOSTNAME" \
         --advertise-exit-node \
         --accept-routes \
-        --operator="$USER" > /tmp/tailscale_auth2.log 2>&1
+        --timeout=5s > /tmp/tailscale_auth2.log 2>&1
 
     AUTH_RESULT=$?
 
-    if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth2.log; then
-        log "✓ Authentication successful with TS_AUTHKEY method!"
+    if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth2.log; then
+        log "✓ Authentication successful with simplified method!"
     else
-        log "Method 2 failed (exit code: $AUTH_RESULT), trying Method 3..."
-        if grep -qi "error" /tmp/tailscale_auth2.log; then
+        log "Method 2 failed (exit code: $AUTH_RESULT)"
+        if grep -Ei "error|invalid" /tmp/tailscale_auth2.log; then
             log "Error found in output:"
-            grep -i "error" /tmp/tailscale_auth2.log | head -3
+            grep -Ei "error|invalid" /tmp/tailscale_auth2.log | head -3
         fi
 
-        # Method 3: Use Tailscale's native file: prefix support
-        log "AutoDeploy: Method 3 - Using --auth-key with file: prefix..."
-        tailscale up \
-            --auth-key="file:${AUTH_KEY_FILE}" \
+        # Method 3: Try basic connection without extra flags
+        log "AutoDeploy: Method 3 - Basic connection only..."
+        timeout 10 tailscale up \
+            --authkey="${AUTH_KEY_FROM_FILE}" \
             --hostname="$HOSTNAME" \
-            --advertise-exit-node \
-            --accept-routes \
-            --operator="$USER" > /tmp/tailscale_auth3.log 2>&1
+            --timeout=5s > /tmp/tailscale_auth3.log 2>&1
 
         AUTH_RESULT=$?
 
-        if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth3.log; then
-            log "✓ Authentication successful with file: prefix method!"
+        if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth3.log; then
+            log "✓ Authentication successful with basic method!"
+
+            # Now enable exit node features
+            log "Enabling exit node features..."
+            timeout 10 tailscale up --advertise-exit-node --accept-routes 2>&1 | tee -a /tmp/tailscale_auth3.log
         else
-            log "Method 3 failed (exit code: $AUTH_RESULT), trying Method 4..."
-            if grep -qi "error" /tmp/tailscale_auth3.log; then
-                log "Error found in output:"
-                grep -i "error" /tmp/tailscale_auth3.log | head -3
-            fi
+            log "Method 3 failed (exit code: $AUTH_RESULT)"
 
-            # Method 4: Write key in a different format and use stdin
-            log "AutoDeploy: Method 4 - Using stdin for auth key..."
-            printf "%s" "$AUTH_KEY_FROM_FILE" | tailscale up \
-                --authkey=- \
-                --hostname="$HOSTNAME" \
-                --advertise-exit-node \
-                --accept-routes \
-                --operator="$USER" > /tmp/tailscale_auth4.log 2>&1
-
-            AUTH_RESULT=$?
-
-            if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth4.log; then
-                log "✓ Authentication successful with stdin method!"
-            else
-                log "All authentication methods failed!"
-                log "Error details:"
-                for logfile in /tmp/tailscale_auth*.log; do
-                    if [ -f "$logfile" ]; then
-                        log "=== $(basename $logfile) ==="
-                        tail -10 "$logfile"
-                    fi
-                done
-                log "WARNING: Service will run without Tailscale VPN connection"
-            fi
+            log ""
+            log "======================================"
+            log "ALL AUTHENTICATION METHODS FAILED"
+            log "======================================"
+            log ""
+            log "Possible causes:"
+            log "1. Auth key is expired or invalid - regenerate in Tailscale admin console"
+            log "2. Auth key doesn't have proper permissions"
+            log "3. Network connectivity issues with Tailscale servers"
+            log ""
+            log "Full error details:"
+            for logfile in /tmp/tailscale_auth*.log; do
+                if [ -f "$logfile" ]; then
+                    log ""
+                    log "=== $(basename $logfile) ==="
+                    cat "$logfile"
+                fi
+            done
+            log ""
+            log "⚠️  Service will continue running but without Tailscale VPN"
         fi
     fi
 fi
