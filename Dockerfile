@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 # Install Tailscale and minimal dependencies (optimized layer caching)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        curl ca-certificates iptables iproute2 netcat-openbsd kmod libcap2-bin && \
+        curl ca-certificates iptables iproute2 netcat-openbsd kmod libcap2-bin socat && \
     curl -fsSL https://tailscale.com/install.sh | sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
