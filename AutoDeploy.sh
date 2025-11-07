@@ -161,56 +161,93 @@ HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${S
 # Connect to Tailscale using FILE-BASED authentication
 log "AutoDeploy: Starting Tailscale authentication with file-based method..."
 log "AutoDeploy: Using auth key file: $AUTH_KEY_FILE"
+log "AutoDeploy: Auth key from file (for verification): '${AUTH_KEY_FROM_FILE:0:20}...${AUTH_KEY_FROM_FILE: -10}'"
 
-# Method 1: Use Tailscale's native file: prefix support
-log "AutoDeploy: Method 1 - Using --auth-key with file: prefix..."
+# Method 1: Direct authkey parameter with properly quoted key from file
+log "AutoDeploy: Method 1 - Using --authkey with direct key from file..."
 tailscale up \
-    --auth-key="file:$AUTH_KEY_FILE" \
+    --authkey="${AUTH_KEY_FROM_FILE}" \
     --hostname="$HOSTNAME" \
     --advertise-exit-node \
     --accept-routes \
-    --operator="$USER" 2>&1 | tee /tmp/tailscale_auth.log
+    --operator="$USER" > /tmp/tailscale_auth1.log 2>&1
 
+# Use PIPESTATUS to get the actual exit code of tailscale, not tee/redirect
 AUTH_RESULT=$?
 
-if [ $AUTH_RESULT -eq 0 ]; then
-    log "✓ Authentication successful with file-based method!"
+# Check for error messages in the output
+if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth1.log; then
+    log "✓ Authentication successful with direct key method!"
 else
-    log "Method 1 failed, trying Method 2..."
+    log "Method 1 failed (exit code: $AUTH_RESULT), trying Method 2..."
+    if grep -qi "error" /tmp/tailscale_auth1.log; then
+        log "Error found in output:"
+        grep -i "error" /tmp/tailscale_auth1.log | head -3
+    fi
 
-    # Method 2: Direct authkey parameter with key content from file
-    log "AutoDeploy: Method 2 - Using --authkey with direct key from file..."
-    tailscale up \
-        --authkey="$AUTH_KEY_FROM_FILE" \
+    # Method 2: Use TS_AUTHKEY environment variable
+    log "AutoDeploy: Method 2 - Using TS_AUTHKEY environment variable..."
+    TS_AUTHKEY="${AUTH_KEY_FROM_FILE}" tailscale up \
         --hostname="$HOSTNAME" \
         --advertise-exit-node \
         --accept-routes \
-        --operator="$USER" 2>&1 | tee /tmp/tailscale_auth2.log
+        --operator="$USER" > /tmp/tailscale_auth2.log 2>&1
 
     AUTH_RESULT=$?
 
-    if [ $AUTH_RESULT -eq 0 ]; then
-        log "✓ Authentication successful with direct key method!"
+    if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth2.log; then
+        log "✓ Authentication successful with TS_AUTHKEY method!"
     else
-        log "Method 2 failed, trying Method 3..."
+        log "Method 2 failed (exit code: $AUTH_RESULT), trying Method 3..."
+        if grep -qi "error" /tmp/tailscale_auth2.log; then
+            log "Error found in output:"
+            grep -i "error" /tmp/tailscale_auth2.log | head -3
+        fi
 
-        # Method 3: Use TS_AUTHKEY environment variable with file content
-        log "AutoDeploy: Method 3 - Using TS_AUTHKEY environment variable..."
-        TS_AUTHKEY="$AUTH_KEY_FROM_FILE" tailscale up \
+        # Method 3: Use Tailscale's native file: prefix support
+        log "AutoDeploy: Method 3 - Using --auth-key with file: prefix..."
+        tailscale up \
+            --auth-key="file:${AUTH_KEY_FILE}" \
             --hostname="$HOSTNAME" \
             --advertise-exit-node \
             --accept-routes \
-            --operator="$USER" 2>&1 | tee /tmp/tailscale_auth3.log
+            --operator="$USER" > /tmp/tailscale_auth3.log 2>&1
 
         AUTH_RESULT=$?
 
-        if [ $AUTH_RESULT -eq 0 ]; then
-            log "✓ Authentication successful with TS_AUTHKEY method!"
+        if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth3.log; then
+            log "✓ Authentication successful with file: prefix method!"
         else
-            log "All authentication methods failed!"
-            log "Error details from last attempt:"
-            tail -20 /tmp/tailscale_auth3.log
-            log "WARNING: Service will run without Tailscale VPN connection"
+            log "Method 3 failed (exit code: $AUTH_RESULT), trying Method 4..."
+            if grep -qi "error" /tmp/tailscale_auth3.log; then
+                log "Error found in output:"
+                grep -i "error" /tmp/tailscale_auth3.log | head -3
+            fi
+
+            # Method 4: Write key in a different format and use stdin
+            log "AutoDeploy: Method 4 - Using stdin for auth key..."
+            printf "%s" "$AUTH_KEY_FROM_FILE" | tailscale up \
+                --authkey=- \
+                --hostname="$HOSTNAME" \
+                --advertise-exit-node \
+                --accept-routes \
+                --operator="$USER" > /tmp/tailscale_auth4.log 2>&1
+
+            AUTH_RESULT=$?
+
+            if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error" /tmp/tailscale_auth4.log; then
+                log "✓ Authentication successful with stdin method!"
+            else
+                log "All authentication methods failed!"
+                log "Error details:"
+                for logfile in /tmp/tailscale_auth*.log; do
+                    if [ -f "$logfile" ]; then
+                        log "=== $(basename $logfile) ==="
+                        tail -10 "$logfile"
+                    fi
+                done
+                log "WARNING: Service will run without Tailscale VPN connection"
+            fi
         fi
     fi
 fi
