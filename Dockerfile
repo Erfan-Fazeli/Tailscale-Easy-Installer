@@ -18,8 +18,8 @@ RUN mkdir -p /var/lib/tailscale /var/run/tailscale /tmp && \
     chmod 755 /var/lib/tailscale /var/run/tailscale
 
 # Copy scripts and health server
-COPY AutoDeploy.sh entrypoint.sh healthApi.py /
-RUN chmod +x /AutoDeploy.sh /entrypoint.sh /healthApi.py
+COPY scripts/AutoDeploy.sh scripts/entrypoint.sh scripts/healthApi.py scripts/ipInfo.py /
+RUN chmod +x /AutoDeploy.sh /entrypoint.sh /healthApi.py /ipInfo.py
 
 # Expose health check port
 EXPOSE 10000
@@ -27,5 +27,9 @@ EXPOSE 10000
 # Set environment for better exit node compatibility
 ENV TAILSCALE_USE_WIP_CODE=1 \
     TAILSCALE_DEBUG_FIREWALL_MODE=auto
+
+# Create scripts directory and copy scripts there for reference
+RUN mkdir -p /scripts && \
+    cp /AutoDeploy.sh /entrypoint.sh /healthApi.py /ipInfo.py /scripts/ 2>/dev/null || true
 
 CMD ["sleep", "infinity"]
