@@ -10,6 +10,12 @@ for env_file in /workspaces/*/\.env /workspace/.env /.env .env; do
     fi
 done
 
+# Export environment variables so they're available to child processes
+export TAILSCALE_AUTH_KEY
+export HOSTNAME_PREFIX
+export COUNTRY_CODE_OVERRIDE
+export HTTP_PORT
+
 # Check for auth key
 if [ -z "$TAILSCALE_AUTH_KEY" ]; then
     echo "ERROR: TAILSCALE_AUTH_KEY not found"
