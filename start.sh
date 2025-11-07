@@ -29,7 +29,7 @@ start_daemon() {
     log "Starting Tailscale daemon..."
 
     # Try privileged mode first, fallback to userspace if fails
-    if tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock 2>/dev/null &
+    if tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
     then
         local pid=$!
         sleep 2
@@ -37,16 +37,23 @@ start_daemon() {
             log "Tailscale daemon started (kernel mode)"
             return 0
         fi
+        warn "Kernel mode failed (pid $pid died)"
         kill $pid 2>/dev/null || true
     fi
 
     # Fallback to userspace mode
     log "Falling back to userspace networking mode..."
-    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
-    local pid=$!
-    sleep 2
-    ps -p $pid > /dev/null 2>&1 || err "Tailscale daemon failed to start"
-    log "Tailscale daemon started (userspace mode)"
+    if tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock & then
+        local pid=$!
+        sleep 3
+        if ps -p $pid > /dev/null 2>&1; then
+            log "Tailscale daemon started (userspace mode)"
+            return 0
+        fi
+        err "Tailscale daemon failed to start (pid $pid died). Check permissions."
+    else
+        err "Failed to start tailscaled. Check if binary exists and permissions are correct."
+    fi
 }
 
 # Detect country code
@@ -76,18 +83,24 @@ connect() {
     local hostname="$1"
 
     # Try with exit node first
+    log "Attempting to connect as exit node..."
     for i in {1..2}; do
-        if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --advertise-exit-node --accept-routes --timeout=30s 2>/dev/null; then
-            log "Connected as exit node"
+        if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --advertise-exit-node --accept-routes --timeout=30s; then
+            log "✓ Connected as exit node"
             return 0
         fi
+        warn "Exit node attempt $i failed, retrying..."
         sleep 2
     done
 
     # Fallback: connect without exit node
-    log "Exit node mode failed, connecting as regular client..."
-    tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --accept-routes --timeout=30s || err "Failed to connect"
-    log "Connected as regular client"
+    log "Exit node mode unavailable, connecting as regular client..."
+    if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --accept-routes --timeout=30s; then
+        log "✓ Connected as regular client"
+        return 0
+    else
+        err "Failed to connect to Tailscale network"
+    fi
 }
 
 # Cleanup on exit

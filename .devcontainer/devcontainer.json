@@ -2,5 +2,7 @@
   "name": "Tailscale Node",
   "build": {"dockerfile": "../Dockerfile"},
   "forwardPorts": [8080],
-  "postStartCommand": "/entrypoint.sh"
+  "capAdd": ["NET_ADMIN", "NET_RAW"],
+  "runArgs": ["--device=/dev/net/tun"],
+  "postCreateCommand": "/entrypoint.sh"
 }
