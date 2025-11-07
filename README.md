@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🚀 Tailscale AutoNode Setup
+# 🚀 Tailscale AutoNode Setup | Easy Installer For All Platform
 
-### *Because manually configuring VPNs is so 2010*
+
 
 **One-click deploy. Zero config. Maximum flex.**
 
@@ -10,7 +10,7 @@
 [![Tailscale](https://img.shields.io/badge/Tailscale-100?style=for-the-badge&logo=tailscale&logoColor=white)](https://tailscale.com)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**Deploy in literally 60 seconds. We timed it. With a stopwatch. Because we're nerds like that.**
+**Just Deploy And Easy Use**
 
 ---
 
@@ -20,7 +20,6 @@
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-*Click → Enter key → Done. Your grandma could do this (but please don't let her, she'll connect her toaster).*
 
 </div>
 
