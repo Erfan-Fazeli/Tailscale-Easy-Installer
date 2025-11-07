@@ -1,48 +1,16 @@
 #!/bin/bash
 
-# Simple Tailscale Auto-Setup - Minimal Version
 echo "=== Starting Tailscale Auto-Setup ==="
 
-# Simple logging
 log() { echo "$(date '+%H:%M:%S') $1"; }
 
-# NEW FILE-BASED AUTHENTICATION APPROACH
-# This completely avoids environment variable issues by using Tailscale's file: prefix support
-
-# Primary method: Use auth key file created by entrypoint.sh
+# Get auth key from file or environment
 if [ -n "$TAILSCALE_AUTH_KEY_FILE" ] && [ -f "$TAILSCALE_AUTH_KEY_FILE" ]; then
-    log "AutoDeploy: Using auth key from file: $TAILSCALE_AUTH_KEY_FILE"
-    AUTH_KEY_FILE="$TAILSCALE_AUTH_KEY_FILE"
-    AUTH_KEY_FROM_FILE=$(cat "$AUTH_KEY_FILE" | tr -d '\n\r')
-    log "AutoDeploy: Auth key from file - length: ${#AUTH_KEY_FROM_FILE}"
-    log "AutoDeploy: Auth key from file - first 20 chars: '${AUTH_KEY_FROM_FILE:0:20}'"
-    log "AutoDeploy: Auth key from file - last 10 chars: '${AUTH_KEY_FROM_FILE: -10}'"
+    AUTH_KEY=$(cat "$TAILSCALE_AUTH_KEY_FILE" | tr -d '\n\r')
+elif [ -n "$TAILSCALE_AUTH_KEY" ]; then
+    AUTH_KEY="$TAILSCALE_AUTH_KEY"
 else
-    # Fallback: Create auth key file from environment variable
-    log "AutoDeploy: Creating auth key file from environment variable"
-    AUTH_KEY="${TAILSCALE_AUTH_KEY}"
-
-    if [ -z "$AUTH_KEY" ]; then
-        log "ERROR: TAILSCALE_AUTH_KEY not found in environment"
-        env | grep TAILSCALE | grep -v AUTH || true
-        exit 1
-    fi
-
-    # Create the auth key file
-    AUTH_KEY_FILE="/tmp/tailscale-authkey"
-    echo -n "$AUTH_KEY" > "$AUTH_KEY_FILE"
-    chmod 600 "$AUTH_KEY_FILE"
-
-    AUTH_KEY_FROM_FILE=$(cat "$AUTH_KEY_FILE")
-    log "AutoDeploy: Created auth key file: $AUTH_KEY_FILE"
-    log "AutoDeploy: Auth key length: ${#AUTH_KEY_FROM_FILE}"
-    log "AutoDeploy: Auth key first 20 chars: '${AUTH_KEY_FROM_FILE:0:20}'"
-    log "AutoDeploy: Auth key last 10 chars: '${AUTH_KEY_FROM_FILE: -10}'"
-fi
-
-# Verify auth key looks valid
-if [ "${#AUTH_KEY_FROM_FILE}" -lt 30 ]; then
-    log "ERROR: Auth key appears invalid - too short (${#AUTH_KEY_FROM_FILE} chars)"
+    log "ERROR: TAILSCALE_AUTH_KEY not found"
     exit 1
 fi
 
@@ -158,116 +126,21 @@ echo $((SEQUENCE + 1)) > /tmp/count
 # Generate hostname
 HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${SEQUENCE}"
 
-# Connect to Tailscale using FILE-BASED authentication
-log "AutoDeploy: Starting Tailscale authentication with file-based method..."
-log "AutoDeploy: Using auth key file: $AUTH_KEY_FILE"
-log "AutoDeploy: Auth key from file (for verification): '${AUTH_KEY_FROM_FILE:0:20}...${AUTH_KEY_FROM_FILE: -10}'"
-
-# CRITICAL DEBUG: Let's verify what we're actually sending to Tailscale
-log "AutoDeploy: DEBUG - Full auth key being sent (first/last 15 chars):"
-log "  First 15: '${AUTH_KEY_FROM_FILE:0:15}'"
-log "  Last 15:  '${AUTH_KEY_FROM_FILE: -15}'"
-log "  Full key has $(echo -n "${AUTH_KEY_FROM_FILE}" | wc -c) characters"
-
-# Verify no hidden characters
-if echo "${AUTH_KEY_FROM_FILE}" | grep -q '[^a-zA-Z0-9_-]'; then
-    log "WARNING: Auth key contains unexpected characters!"
-    echo "${AUTH_KEY_FROM_FILE}" | od -c > /tmp/authkey_hex_dump.txt
-    log "Hex dump saved to /tmp/authkey_hex_dump.txt"
-fi
-
-# Method 1: Direct authkey parameter with properly quoted key from file
-log "AutoDeploy: Method 1 - Using --authkey with direct key from file..."
-timeout 10 tailscale up \
-    --authkey="${AUTH_KEY_FROM_FILE}" \
+# Connect to Tailscale
+log "Connecting to Tailscale..."
+tailscale up \
+    --authkey="${AUTH_KEY}" \
     --hostname="$HOSTNAME" \
     --advertise-exit-node \
     --accept-routes \
-    --timeout=5s \
-    --operator="$USER" > /tmp/tailscale_auth1.log 2>&1
+    --timeout=10s \
+    --operator="$USER"
 
-AUTH_RESULT=$?
-
-# Check for error messages in the output
-if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth1.log; then
-    log "✓ Authentication successful with direct key method!"
+if [ $? -eq 0 ]; then
+    log "✓ Connected to Tailscale successfully"
 else
-    log "Method 1 failed (exit code: $AUTH_RESULT)"
-    if grep -Ei "error|invalid" /tmp/tailscale_auth1.log; then
-        log "Error found in output:"
-        grep -Ei "error|invalid" /tmp/tailscale_auth1.log | head -3
-    fi
-
-    # CRITICAL: Check if the auth key itself might be expired or invalid
-    if grep -qi "invalid key" /tmp/tailscale_auth1.log; then
-        log "⚠️  IMPORTANT: The auth key appears to be invalid or expired!"
-        log "⚠️  Please check your Tailscale admin console and regenerate the auth key"
-        log "⚠️  Make sure to create a reusable auth key with appropriate expiration"
-    fi
-
-    # Method 2: Try without operator flag (might be causing issues)
-    log "AutoDeploy: Method 2 - Simplified approach without operator flag..."
-    timeout 10 tailscale up \
-        --authkey="${AUTH_KEY_FROM_FILE}" \
-        --hostname="$HOSTNAME" \
-        --advertise-exit-node \
-        --accept-routes \
-        --timeout=5s > /tmp/tailscale_auth2.log 2>&1
-
-    AUTH_RESULT=$?
-
-    if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth2.log; then
-        log "✓ Authentication successful with simplified method!"
-    else
-        log "Method 2 failed (exit code: $AUTH_RESULT)"
-        if grep -Ei "error|invalid" /tmp/tailscale_auth2.log; then
-            log "Error found in output:"
-            grep -Ei "error|invalid" /tmp/tailscale_auth2.log | head -3
-        fi
-
-        # Method 3: Reset and try fresh connection with all flags
-        log "AutoDeploy: Method 3 - Fresh connection with --reset flag..."
-        timeout 10 tailscale up \
-            --reset \
-            --authkey="${AUTH_KEY_FROM_FILE}" \
-            --hostname="$HOSTNAME" \
-            --advertise-exit-node \
-            --accept-routes \
-            --timeout=5s > /tmp/tailscale_auth3.log 2>&1
-
-        AUTH_RESULT=$?
-
-        if [ $AUTH_RESULT -eq 0 ] && ! grep -qi "error\|invalid" /tmp/tailscale_auth3.log; then
-            log "✓ Authentication successful with reset method!"
-        else
-            log "Method 3 failed (exit code: $AUTH_RESULT)"
-            if grep -Ei "error|invalid" /tmp/tailscale_auth3.log; then
-                log "Error found in output:"
-                grep -Ei "error|invalid" /tmp/tailscale_auth3.log | head -3
-            fi
-
-            log ""
-            log "======================================"
-            log "ALL AUTHENTICATION METHODS FAILED"
-            log "======================================"
-            log ""
-            log "Possible causes:"
-            log "1. Auth key is expired or invalid - regenerate in Tailscale admin console"
-            log "2. Auth key doesn't have proper permissions"
-            log "3. Network connectivity issues with Tailscale servers"
-            log ""
-            log "Full error details:"
-            for logfile in /tmp/tailscale_auth*.log; do
-                if [ -f "$logfile" ]; then
-                    log ""
-                    log "=== $(basename $logfile) ==="
-                    cat "$logfile"
-                fi
-            done
-            log ""
-            log "⚠️  Service will continue running but without Tailscale VPN"
-        fi
-    fi
+    log "ERROR: Failed to connect to Tailscale"
+    log "Please check your auth key at: https://login.tailscale.com/admin/settings/keys"
 fi
 
 # Status
