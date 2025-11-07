@@ -27,19 +27,8 @@ fi
 # Start health server
 start_health() {
     log "Starting health server on port $HTTP_PORT"
-    # Use socat for persistent listening (better than nc)
-    if command -v socat >/dev/null 2>&1; then
-        socat TCP-LISTEN:$HTTP_PORT,reuseaddr,fork EXEC:"/bin/bash -c 'echo -e \"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\\\"status\\\":\\\"ok\\\"}\"'" 2>/dev/null &
-        HEALTH_PID=$!
-    else
-        # Fallback to nc with while loop
-        {
-            while true; do
-                echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\"}" | nc -l -p "$HTTP_PORT" -q 1 2>/dev/null || sleep 0.1
-            done
-        } &
-        HEALTH_PID=$!
-    fi
+    python3 /health-server.py &
+    HEALTH_PID=$!
     log "Health server started (PID: $HEALTH_PID)"
 }
 
