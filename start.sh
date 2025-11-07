@@ -26,12 +26,9 @@ fi
 
 # Start health server
 start_health() {
-    # Create a more robust health server that doesn't interfere with terminal output
-    {
-        while true; do
-            echo -e "HTTP/1.1 200 OK\r\n\r\n{\"status\":\"ok\"}" | nc -l -p "$HTTP_PORT" -q 1 2>/dev/null || true
-        done
-    } &
+    while true; do
+        echo -e "HTTP/1.1 200 OK\r\n\r\n{\"status\":\"ok\"}" | nc -l -p "$HTTP_PORT" -q 1 || true
+    done &
     HEALTH_PID=$!
 }
 
@@ -51,28 +48,18 @@ start_daemon() {
 
     # For Codespaces/containers, directly use userspace mode
     log "Starting in userspace networking mode (optimal for containers)..."
-    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock >/dev/null 2>&1 &
+    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
     local pid=$!
 
     # Wait for daemon to be ready
-    local max_attempts=10
-    local attempt=0
-    while [ $attempt -lt $max_attempts ]; do
+    for i in {1..10}; do
         sleep 1
         if tailscale status >/dev/null 2>&1; then
-            log "✓ Tailscale daemon started (userspace mode)"
+            log "✓ Tailscale daemon ready"
             return 0
         fi
-        attempt=$((attempt + 1))
     done
-
-    # Final check
-    if tailscale status >/dev/null 2>&1; then
-        log "✓ Tailscale daemon is running"
-        return 0
-    fi
-
-    warn "Tailscale daemon startup uncertain, but continuing..."
+    warn "Daemon startup uncertain, continuing..."
     return 0
 }
 
@@ -280,31 +267,24 @@ NODES=$(tailscale status 2>/dev/null | grep -c "^[0-9]" || echo "0")
 UPTIME=$(ps -p $$ -o etime= | tr -d ' ' || echo "N/A")
 CONNECTION_STATUS=$(tailscale status 2>/dev/null | head -1 || echo "NeedsApproval")
 
-# Save and display banner
-BANNER=$(cat <<EOF
+# Display summary banner
+cat <<EOF
 
-╔═══════════════════════════════════════════════════════════╗
-║              ✓  TAILSCALE CONNECTION ESTABLISHED           ║
-╚═══════════════════════════════════════════════════════════╝
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ TAILSCALE CONNECTED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Hostname:          $HOSTNAME
-Tailscale IPv4:    $TS_IP4
-Public IP:         $PUBLIC_IP
-Location:          $DATACENTER / $COUNTRY
-Connection:        $CONNECTION_STATUS
-Exit Node:         Advertised (Approve in Admin Panel)
-Network Nodes:     $NODES
+  Host:        $HOSTNAME
+  Tailscale:   $TS_IP4
+  Public IP:   $PUBLIC_IP
+  Location:    $DATACENTER / $COUNTRY
+  Exit Node:   Advertised (needs approval)
 
-🔗 Admin Panel: https://login.tailscale.com/admin/machines
-📊 Health Check: http://localhost:$HTTP_PORT
+  Admin:       https://login.tailscale.com/admin/machines
+  Health:      http://localhost:$HTTP_PORT
 
-⚠️  Action Required: Approve this device in the Tailscale Admin Panel
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 EOF
-)
 
-echo "$BANNER"
-echo "$BANNER" > /tmp/tailscale-status.txt
-
-sleep 2
-log "✓ Tailscale setup complete - services running in background"
+log "Setup complete - services running"
