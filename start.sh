@@ -310,5 +310,3 @@ echo -e "\033[1;34m🔗 Admin Panel:\033[0m \033[4;36mhttps://login.tailscale.co
 echo -e "\033[1;34m📊 Health Check:\033[0m \033[4;36mhttp://localhost:$HTTP_PORT\033[0m"
 echo -e "\033[1;33m⚠️  Action Required:\033[0m \033[1;37mApprove this device in the Tailscale Admin Panel\033[0m"
 echo ""
-
-wait
