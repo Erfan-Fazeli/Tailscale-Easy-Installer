@@ -27,7 +27,7 @@ fi
 # Start health server
 start_health() {
     log "Starting health server on port $HTTP_PORT"
-    /health-server &
+    /health-server.sh &
     HEALTH_PID=$!
     log "Health server started (PID: $HEALTH_PID)"
 }
