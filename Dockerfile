@@ -1,15 +1,9 @@
 FROM ubuntu:24.04
 
-# Install Tailscale and minimal dependencies (including libcap for capability checks)
+# Install Tailscale and minimal dependencies (optimized layer caching)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        iptables \
-        iproute2 \
-        netcat-openbsd \
-        kmod \
-        libcap2-bin && \
+        curl ca-certificates iptables iproute2 netcat-openbsd kmod libcap2-bin && \
     curl -fsSL https://tailscale.com/install.sh | sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -24,8 +18,8 @@ RUN mkdir -p /var/lib/tailscale /var/run/tailscale /tmp && \
     chmod 755 /var/lib/tailscale /var/run/tailscale
 
 # Copy scripts
-COPY start.sh entrypoint.sh /
-RUN chmod +x /start.sh /entrypoint.sh
+COPY autodeploy.sh entrypoint.sh /
+RUN chmod +x /autodeploy.sh /entrypoint.sh
 
 # Expose health check port
 EXPOSE 8080

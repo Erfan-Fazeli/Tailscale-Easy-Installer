@@ -54,25 +54,16 @@ start_daemon() {
     tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock 2>&1 | sed 's/^/  [tailscaled] /' &
     local pid=$!
 
-    # Wait for daemon to be ready
-    local max_attempts=10
-    local attempt=0
-    while [ $attempt -lt $max_attempts ]; do
-        sleep 1
+    # Wait for daemon to be ready (faster check with 0.5s intervals)
+    for i in {1..20}; do
+        sleep 0.5
         if tailscale status >/dev/null 2>&1; then
-            log "✓ Tailscale daemon started (userspace mode)"
+            log "✓ Tailscale daemon ready"
             return 0
         fi
-        attempt=$((attempt + 1))
     done
 
-    # Final check
-    if tailscale status >/dev/null 2>&1; then
-        log "✓ Tailscale daemon is running"
-        return 0
-    fi
-
-    warn "Tailscale daemon startup uncertain, but continuing..."
+    warn "Daemon startup uncertain, continuing..."
     return 0
 }
 
@@ -88,53 +79,47 @@ get_datacenter_info() {
     local provider="Unknown"
     local region=""
     
-    # Try AWS metadata - get region and use that as provider
-    if aws_region=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
+    # Try AWS metadata - faster timeout (1s instead of 2s)
+    if aws_region=$(curl -sf --max-time 1 http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null); then
         if [ -n "$aws_region" ]; then
             provider="AWS"
             region="$aws_region"
         fi
     fi
-    
+
     # Try GCP metadata if AWS failed
-    if [ "$provider" = "Unknown" ] && gcp_zone=$(curl -sf --max-time 2 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
+    if [ "$provider" = "Unknown" ] && gcp_zone=$(curl -sf --max-time 1 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null | awk -F/ '{print $4}'); then
         if [ -n "$gcp_zone" ]; then
             provider="GCP"
             region="$gcp_zone"
         fi
     fi
-    
+
     # Try Azure metadata if previous failed
-    if [ "$provider" = "Unknown" ] && az_region=$(curl -sf --max-time 2 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
+    if [ "$provider" = "Unknown" ] && az_region=$(curl -sf --max-time 1 -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null); then
         if [ -n "$az_region" ]; then
             provider="Azure"
             region="$az_region"
         fi
     fi
     
-    # Try ipinfo.io if none of the above work
+    # Try ipinfo.io if none of the above work (faster timeout)
     if [ "$provider" = "Unknown" ]; then
-        # Get organization info with better parsing
-        local org_info=$(curl -sf --max-time 4 https://ipinfo.io/org 2>/dev/null || echo "")
+        local org_info=$(curl -sf --max-time 2 https://ipinfo.io/org 2>/dev/null || echo "")
         if [ -n "$org_info" ]; then
-            # Extract first meaningful word, clean it up
+            # Extract first meaningful word
             local clean_org=$(echo "$org_info" | sed 's/^AS[0-9]*[[:space:]]*//' | sed 's/Internet[^ ]*//g' | sed 's/Services[^ ]*//g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g')
             if [ -n "$clean_org" ] && [ ${#clean_org} -ge 2 ]; then
                 provider="$clean_org"
             else
-                # Fallback to extracting from organization
                 local first_part=$(echo "$org_info" | awk '{print $1}' | sed 's/[^a-zA-Z0-9]//g')
-                if [ -n "$first_part" ]; then
-                    provider="$first_part"
-                fi
+                [ -n "$first_part" ] && provider="$first_part"
             fi
         fi
-        
-        # Also try to get region from ipinfo
-        local region_info=$(curl -sf --max-time 3 https://ipinfo.io/region 2>/dev/null || echo "")
-        if [ -n "$region_info" ]; then
-            region=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
-        fi
+
+        # Get region from ipinfo (faster timeout)
+        local region_info=$(curl -sf --max-time 2 https://ipinfo.io/region 2>/dev/null || echo "")
+        [ -n "$region_info" ] && region=$(echo "$region_info" | tr '[:lower:]' '[:upper:]' | sed 's/[^a-zA-Z0-9]//g')
     fi
     
     # Final fallback if still Unknown
@@ -151,11 +136,11 @@ get_datacenter_info() {
     return
 }
 
-# Detect country code
+# Detect country code (faster)
 get_country() {
     [ -n "$COUNTRY_CODE_OVERRIDE" ] && echo "$COUNTRY_CODE_OVERRIDE" && return
 
-    local c=$(curl -sf --max-time 3 https://ipinfo.io/country 2>/dev/null | tr -d '\n' | tr '[:lower:]' '[:upper:]')
+    local c=$(curl -sf --max-time 2 https://ipinfo.io/country 2>/dev/null | tr -d '\n' | tr '[:lower:]' '[:upper:]')
     if [ -n "$c" ] && [ ${#c} -eq 2 ]; then
         echo "$c"
     else
@@ -215,17 +200,17 @@ get_hostname() {
     echo "$name"
 }
 
-# Connect to Tailscale
+# Connect to Tailscale (faster retry)
 connect() {
     local hostname="$1"
 
-    # Try as exit node (2 attempts)
+    # Try as exit node (2 attempts with shorter wait)
     for i in 1 2; do
         if tailscale up --authkey="$AUTH_KEY" --hostname="$hostname" --advertise-exit-node --accept-routes --timeout=30s; then
             log "✓ Connected as exit node"
             return 0
         fi
-        [ $i -eq 1 ] && sleep 2
+        [ $i -eq 1 ] && sleep 1
     done
 
     # Fallback: regular mode
@@ -272,12 +257,10 @@ log "Hostname: $HOSTNAME"
 
 connect "$HOSTNAME"
 
-# Get connection info even if status commands fail
+# Get connection info (parallel where possible)
 TS_IP4=$(tailscale ip -4 2>/dev/null || echo "N/A")
-TS_IP6=$(tailscale ip -6 2>/dev/null || echo "N/A")
-PUBLIC_IP=$(curl -sf --max-time 3 ifconfig.me 2>/dev/null || echo "N/A")
+PUBLIC_IP=$(curl -sf --max-time 2 ifconfig.me 2>/dev/null || echo "N/A")
 NODES=$(tailscale status 2>/dev/null | grep -c "^[0-9]" || echo "0")
-UPTIME=$(ps -p $$ -o etime= | tr -d ' ' || echo "N/A")
 CONNECTION_STATUS=$(tailscale status 2>/dev/null | head -1 || echo "NeedsApproval")
 
 # Save and display banner
@@ -306,5 +289,4 @@ EOF
 echo "$BANNER"
 echo "$BANNER" > /tmp/tailscale-status.txt
 
-sleep 2
 log "✓ Tailscale setup complete - services running in background"
