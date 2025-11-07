@@ -17,6 +17,13 @@ fi
 log "AutoDeploy: Auth key length: ${#AUTH_KEY}"
 log "AutoDeploy: Auth key preview: ${AUTH_KEY:0:8}...${AUTH_KEY: -8}"
 
+# Additional debugging - check if the key looks like a proper Tailscale key
+if [[ "$AUTH_KEY" =~ ^tskey-[a-z]+-[A-Za-z0-9_-]+$ ]]; then
+    log "AutoDeploy: Auth key format appears valid"
+else
+    log "AutoDeploy: WARNING - Auth key format may be invalid: ${AUTH_KEY:0:20}"
+fi
+
 # Start health server using external Python script
 PORT="${PORT:-10000}"
 log "Starting health server on port $PORT"

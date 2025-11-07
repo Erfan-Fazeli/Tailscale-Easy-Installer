@@ -21,6 +21,9 @@ fi
 # Remove quotes if present
 TAILSCALE_AUTH_KEY=$(echo "$TAILSCALE_AUTH_KEY" | sed 's/^"//' | sed 's/"$//')
 
+# Export the cleaned auth key so AutoDeploy.sh can access it
+export TAILSCALE_AUTH_KEY
+
 # Debug auth key info (without exposing sensitive data)
 echo "✓ Found TAILSCALE_AUTH_KEY"
 echo "Auth key length: ${#TAILSCALE_AUTH_KEY}"
