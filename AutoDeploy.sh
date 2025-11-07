@@ -115,8 +115,13 @@ REGION=$(echo "$IP_INFO" | jq -r '.region // "UnknownRegion"' 2>/dev/null)
 ORG=$(echo "$IP_INFO" | jq -r '.org // "UnknownProvider"' 2>/dev/null)
 
 # Sanitize strings for hostname
-REGION_SANITIZED=$(echo "$REGION" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]')
-ORG_SANITIZED=$(echo "$ORG" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]')
+# Replace non-alphanumeric characters with a single hyphen, convert to lowercase, and remove leading/trailing hyphens
+REGION_SANITIZED=$(echo "$REGION" | sed -E 's/[^a-zA-Z0-9]+/-/g' | tr '[:upper:]' '[:lower:]' | sed -E 's/^-+|-+$//g')
+ORG_SANITIZED=$(echo "$ORG" | sed -E 's/[^a-zA-Z0-9]+/-/g' | tr '[:upper:]' '[:lower:]' | sed -E 's/^-+|-+$//g')
+
+# Use default if sanitized values are empty
+REGION_SANITIZED="${REGION_SANITIZED:-unknown-region}"
+ORG_SANITIZED="${ORG_SANITIZED:-unknown-provider}"
 
 SEQUENCE=$(cat /tmp/count 2>/dev/null || echo "1")
 echo $((SEQUENCE + 1)) > /tmp/count
@@ -135,7 +140,7 @@ log "AutoDeploy: Connecting with auth key from file..."
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
     log "Authentication attempt $attempt/3..."
-    if tailscale up --authkey-file="$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+    if tailscale up --auth-key="file:$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
         log "Authentication successful!"
         break
     else
