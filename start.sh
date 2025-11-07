@@ -39,31 +39,46 @@ start_health() {
 start_daemon() {
     log "Starting Tailscale daemon..."
 
-    # Try privileged mode first, fallback to userspace if fails
-    if tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
-    then
-        local pid=$!
-        sleep 2
-        if ps -p $pid > /dev/null 2>&1; then
-            log "Tailscale daemon started (kernel mode)"
-            return 0
-        fi
-        warn "Kernel mode failed (pid $pid died)"
-        kill $pid 2>/dev/null || true
+    # Clean up any existing sockets first
+    rm -f /var/run/tailscale/tailscaled.sock
+    rm -f /run/tailscale/tailscaled.sock
+    
+    # Check if daemon is already running
+    if tailscale status >/dev/null 2>&1; then
+        log "Tailscale daemon is already running"
+        return 0
     fi
+
+    # Try privileged mode first, fallback to userspace if fails
+    tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+    local pid=$!
+    sleep 2
+    if ps -p $pid > /dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
+        log "Tailscale daemon started (kernel mode)"
+        return 0
+    fi
+    
+    warn "Kernel mode failed, cleaning up..."
+    kill $pid 2>/dev/null || true
+    rm -f /var/run/tailscale/tailscaled.sock
 
     # Fallback to userspace mode
     log "Falling back to userspace networking mode..."
-    if tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock & then
-        local pid=$!
-        sleep 3
-        if ps -p $pid > /dev/null 2>&1; then
-            log "Tailscale daemon started (userspace mode)"
+    tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+    local pid2=$!
+    sleep 3
+    if ps -p $pid2 > /dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
+        log "Tailscale daemon started (userspace mode)"
+        return 0
+    else
+        warn "Tailscale daemon failed to start (pid $pid2 died). Checking if daemon is actually working..."
+        # Final check if daemon is actually running despite errors
+        if tailscale status >/dev/null 2>&1; then
+            log "✓ Tailscale daemon is running and responsive"
             return 0
         fi
-        err "Tailscale daemon failed to start (pid $pid died). Check permissions."
-    else
-        err "Failed to start tailscaled. Check if binary exists and permissions are correct."
+        warn "All attempts to start Tailscale daemon had issues, but continuing..."
+        return 1
     fi
 }
 
