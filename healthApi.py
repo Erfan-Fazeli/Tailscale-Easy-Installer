@@ -41,9 +41,12 @@ class HealthServer:
                     f'{response_body}'
                 )
                 conn.send(response.encode('utf-8'))
-                self.log_message(f"Health check from {addr[0]}")
+                # Only log first health check to avoid spam
+                if not hasattr(self, 'health_logged'):
+                    self.log_message(f"Health check from {addr[0]}")
+                    self.health_logged = True
             else:
-                # 404 for other endpoints
+                # 404 for other endpoints - silent to avoid log spam
                 response_body = 'Not Found'
                 response = (
                     'HTTP/1.1 404 Not Found\r\n'
@@ -53,10 +56,14 @@ class HealthServer:
                     f'{response_body}'
                 )
                 conn.send(response.encode('utf-8'))
-                self.log_message(f"404 request from {addr[0]}: {data.split()[1] if len(data.split()) > 1 else 'unknown'}")
+                # Silent 404s to avoid log spam
+                if '/favicon.ico' in data or '/robots.txt' in data:
+                    pass  # Completely silent for these requests
                 
         except Exception as e:
-            self.log_message(f"Client handling error: {e}")
+            # Only log network errors if they're not common disconnects
+            if 'Connection reset by peer' not in str(e) and 'Broken pipe' not in str(e):
+                self.log_message(f"Client handling error: {e}")
         finally:
             conn.close()
     

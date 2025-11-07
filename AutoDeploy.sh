@@ -111,8 +111,25 @@ echo $((SEQUENCE + 1)) > /tmp/count
 HOSTNAME="Tail-Node-${COUNTRY}-${SEQUENCE}"
 
 # Connect to Tailscale - use FULL auth key exactly as provided
-log "Connecting with key: ${AUTH_KEY:0:15}..."
-tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes
+# Log key length for debugging without exposing sensitive data
+log "Connecting with auth key (length: ${#AUTH_KEY} characters, prefix: ${AUTH_KEY:0:4}...${AUTH_KEY: -4})"
+
+# Try to connect with retries and better error handling
+for attempt in {1..3}; do
+    log "Authentication attempt $attempt/3..."
+    if tailscale up --authkey="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+        log "Authentication successful!"
+        break
+    else
+        log "Authentication attempt $attempt failed"
+        if [ $attempt -lt 3 ]; then
+            log "Retrying in 2 seconds..."
+            sleep 2
+        else
+            log "Authentication failed after 3 attempts"
+        fi
+    fi
+done
 
 # Status
 IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
