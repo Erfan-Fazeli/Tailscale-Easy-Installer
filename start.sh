@@ -26,9 +26,12 @@ fi
 
 # Start health server
 start_health() {
-    while true; do
-        echo -e "HTTP/1.1 200 OK\r\n\r\n{\"status\":\"ok\"}" | nc -l -p "$HTTP_PORT" -q 1 2>/dev/null || true
-    done &
+    # Create a more robust health server that doesn't interfere with terminal output
+    {
+        while true; do
+            echo -e "HTTP/1.1 200 OK\r\n\r\n{\"status\":\"ok\"}" | nc -l -p "$HTTP_PORT" -q 1 2>/dev/null || true
+        done
+    } &
     HEALTH_PID=$!
 }
 
