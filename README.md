@@ -9,9 +9,23 @@
 [![Docker Cloud](https://img.shields.io/docker/cloud/build/tailscale/tailscale.svg?style=flat)](https://hub.docker.com/r/tailscale/tailscale)
 [![Release](https://img.shields.io/github/v/release/tailscale/tailscale?style=flat)](https://github.com/tailscale/tailscale/releases)
 
-<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="32" alt="Deploy on Railway"></a>
-<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="32" alt="Deploy to Render"></a>
-<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="32" alt="Deploy to Heroku"></a>
+<div align="center">
+  <a href="https://railway.app/template/tailscale-node" style="text-decoration: none;">
+    <img src="https://railway.app/button.svg" height="32" width="130" alt="Deploy on Railway" style="margin: 0 5px;">
+  </a>
+  <a href="https://render.com/deploy" style="text-decoration: none;">
+    <img src="https://render.com/images/deploy-to-render-button.svg" height="32" width="130" alt="Deploy on Render" style="margin: 0 5px;">
+  </a>
+  <a href="https://heroku.com/deploy" style="text-decoration: none;">
+    <img src="https://www.herokucdn.com/deploy/button.svg" height="32" width="130" alt="Deploy on Heroku" style="margin: 0 5px;">
+  </a>
+  <a href="https://digitalocean.com/new/app-template" style="text-decoration: none;">
+    <img src="https://www.deploytodo.com/do-btn-blue-ghost.svg" height="32" width="130" alt="Deploy on DigitalOcean" style="margin: 0 5px;">
+  </a>
+  <a href="https://fly.io/launch?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode" style="text-decoration: none;">
+    <img src="https://i.imgur.com/1BTLC6s.png" height="32" width="130" alt="Deploy on Fly.io" style="margin: 0 5px;">
+  </a>
+</div>
 
 </div>
 
@@ -68,56 +82,87 @@ Instant deployment of secure, private networks with enterprise-grade features:
 | **Render** | 60s | ⚠️ Limited | $7/mo | Click Below |
 | **Heroku** | 90s | ❌ No | $5/mo | `git push heroku main` |
 | **Fly.io** | 2m | ⚠️ Limited | $5/mo | `fly deploy` |
+| **DigitalOcean** | 2m | ✅ Full | $5/mo | Deploy Below |
+| **Vercel** | 45s | ❌ No | $0/mo | Deploy Below |
+| **Netlify** | 60s | ❌ No | $0/mo | Deploy Below |
+| **AWS App Runner** | 3m | ✅ Full | $0.05/hr | Deploy Below |
 
 </div>
 
-<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="40" alt="Deploy on Railway"></a>
-<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="40" alt="Deploy to Render"></a>
-<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="40" height="40" alt="Deploy to Heroku"></a>
+<div align="center">
+  <a href="https://railway.app/template/tailscale-node" style="margin: 5px 3px;">
+    <img src="https://railway.app/button.svg" height="45" width="140" alt="Deploy on Railway">
+  </a>
+  <a href="https://render.com/deploy" style="margin: 5px 3px;">
+    <img src="https://render.com/images/deploy-to-render-button.svg" height="45" width="140" alt="Deploy on Render">
+  </a>
+  <a href="https://heroku.com/deploy" style="margin: 5px 3px;">
+    <img src="https://www.herokucdn.com/deploy/button.svg" height="45" width="140" alt="Deploy on Heroku">
+  </a>
+  
+<a href="https://vercel.com/new/clone?repository-url=https://github.com/Erfan-Fazeli/Tailscale_AutoNode" style="margin: 5px 3px;">
+    <img src="https://vercel.com/button" height="45" width="160" alt="Deploy with Vercel">
+  </a>
+  <a href="https://app.netlify.com/start/deploy?repository=https://github.com/Erfan-Fazeli/Tailscale_AutoNode" style="margin: 5px 3px;">
+    <img src="https://www.netlify.com/img/deploy/button.svg" height="45" width="140" alt="Deploy to Netlify">
+  </a>
+  <a href="https://fly.io/launch?template=https://github.com/Erfan-Fazeli/Tailscale_AutoNode" style="margin: 5px 3px;">
+    <img src="https://i.imgur.com/1BTLC6s.png" height="45" width="140" alt="Deploy on Fly.io">
+  </a>
+  <a href="https://digitalocean.com/new/app-template" style="margin: 5px 3px;">
+    <img src="https://www.deploytodo.com/do-btn-blue-ghost.svg" height="45" width="140" alt="Deploy on DigitalOcean">
+  </a>
+  <a href="https://console.aws.amazon.com/apprunner/home?region=us-east-1#/create-service?source=https://github.com/Erfan-Fazeli/Tailscale_AutoNode" style="margin: 5px 3px;">
+    <img src="https://img.shields.io/badge/AWS%20App%20Runner-Deploy-orange.svg?style=flat-square&logo=amazon" height="45" width="160" alt="Deploy on AWS App Runner">
+  </a>
+</div>
 
 ---
 
-## 📋 Platform-Specific Setup
+## 📋 One-Click Automated Deployment
 
-### 🐳 Docker Compose (Recommended)
+### 🐳 Docker Compose (Full Featured - Recommended)
 ```bash
-# Clone and configure
-git clone https://github.com/yourusername/tailscale-autonode
-cd tailscale-autonode
-cp .env.template .env
-
-# Add your auth key to .env file
-echo "TAILSCALE_AUTH_KEY=tskey-auth-your-key-here" >> .env
-
-# Deploy
+# One command - everything automated
+wget https://raw.githubusercontent.com/yourusername/tailscale-autonode/main/docker-compose.yml
 docker-compose up -d
 
-# Monitor
-docker-compose logs -f
+# Just add your auth key when prompted
+# Exit nodes, auto-detection, mesh networking - all configured automatically
 ```
 
-### 🚂 Railway
+### 🚂 Railway (30 Seconds)
 ```bash
-# CLI deployment
-railway init
-railway up
-railway vars set TAILSCALE_AUTH_KEY=tskey-auth-your-key-here
-
-# OR: Use the Railway button above
+# One command deployment
+railway up --no-prompt
+# Railway automatically detects your app config from railway.toml
+# Add your TAILSCALE_AUTH_KEY via dashboard after deployment
 ```
 
-### 🎨 Render
-1. Click "Deploy to Render" button
-2. Connect GitHub repository
-3. Enter `TAILSCALE_AUTH_KEY` environment variable
-4. Deploy!
-
-### 🟣 Heroku
+### 🎨 Render (45 Seconds)
 ```bash
-heroku create your-app-name
+# Click the Render button above
+# Render auto-detects render.yaml configuration
+# Just add your TAILSCALE_AUTH_KEY when prompted
+# Everything else is pre-configured
+```
+
+### 🟣 Heroku (60 Seconds)
+```bash
+# One git push - Heroku automatically detects everything
+git clone https://github.com/yourusername/tailscale-autonode && cd tailscale-autonode
+heroku create
 heroku config:set TAILSCALE_AUTH_KEY=tskey-auth-your-key-here
 git push heroku main
 ```
+
+### ✨ What Happens Automatically:
+- ✅ **Exit Node Configuration** - Automatically advertised (just approve in admin panel)
+- ✅ **Mesh Network Discovery** - Nodes auto-discover optimal routes  
+- ✅ **Hostname Generation** - Smart naming based on location/datacenter
+- ✅ **Country Detection** - Automatically detects your node location
+- ✅ **Network Optimization** - Kernel mode preferred, userspace fallback
+- ✅ **Health Monitoring** - Built-in status dashboard at port 8080
 
 ---
 
@@ -362,14 +407,22 @@ MIT License - See [LICENSE](LICENSE) for details.
 ---
 
 <div align="center">
-
-### 🚀 Ready to Deploy Your Private Network?
-
-**Choose your platform and be online in 60 seconds:**
-
-<a href="https://railway.app/template/tailscale-node"><img src="https://railway.app/button.svg" height="50" alt="Deploy on Railway"></a>
-<a href="https://render.com/deploy"><img src="https://render.com/images/deploy-to-render-button.svg" height="50" alt="Deploy to Render"></a>
-<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" height="50" alt="Deploy to Heroku"></a>
+  <div style="margin: 20px 0;">
+    <h3>🚀 Ready to Deploy Your Private Network?</h3>
+    <p><strong>Choose your platform and be online in 60 seconds:</strong></p>
+    
+    <div style="margin: 15px 0;">
+      <a href="https://railway.app/template/tailscale-node" style="margin: 0 10px;">
+        <img src="https://railway.app/button.svg" height="40" width="130" alt="Deploy on Railway">
+      </a>
+      <a href="https://render.com/deploy" style="margin: 0 10px;">
+        <img src="https://render.com/images/deploy-to-render-button.svg" height="40" width="130" alt="Deploy on Render">
+      </a>
+      <a href="https://heroku.com/deploy" style="margin: 0 10px;">
+        <img src="https://www.herokucdn.com/deploy/button.svg" height="40" width="130" alt="Deploy on Heroku">
+      </a>
+    </div>
+  </div>
 
 **Questions? Join our community or open an issue.**
 
