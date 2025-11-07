@@ -243,7 +243,8 @@ iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || tru
 log "Detecting location..."
 COUNTRY=$(get_country)
 log "Detecting datacenter..."
-DATACENTER=$(get_datacenter_info)
+DATACENTER=$(get_datacenter_info 2>/dev/null)
+DATACENTER=$(echo "$DATACENTER" | tail -1 | tr -d '\n')
 log "Getting sequence number..."
 SEQUENCE=$(get_next_sequence)
 HOSTNAME=$(get_hostname "$COUNTRY" "$DATACENTER" "$SEQUENCE")
