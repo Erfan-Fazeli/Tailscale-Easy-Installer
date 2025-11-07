@@ -129,18 +129,13 @@ echo $((SEQUENCE + 1)) > /tmp/count
 # Generate hostname
 HOSTNAME="${HOSTNAME_PREFIX}-${ORG_SANITIZED}-${REGION_SANITIZED}-${COUNTRY}-${SEQUENCE}"
 
-# Create a temporary file for the auth key
-AUTH_KEY_FILE=$(mktemp)
-echo -n "$AUTH_KEY" > "$AUTH_KEY_FILE"
-chmod 600 "$AUTH_KEY_FILE" # Ensure it's only readable by the owner
-
-# Connect to Tailscale - use auth key from file
-log "AutoDeploy: Connecting with auth key from file..."
+# Connect to Tailscale - use auth key directly
+log "AutoDeploy: Connecting with auth key..."
 
 # Try to connect with retries and better error handling
 for attempt in {1..3}; do
     log "Authentication attempt $attempt/3..."
-    if tailscale up --auth-key="file:$AUTH_KEY_FILE" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
+    if tailscale up --auth-key="$AUTH_KEY" --hostname="$HOSTNAME" --advertise-exit-node --accept-routes; then
         log "Authentication successful!"
         break
     else
@@ -153,9 +148,6 @@ for attempt in {1..3}; do
         fi
     fi
 done
-
-# Clean up the temporary auth key file
-rm -f "$AUTH_KEY_FILE"
 
 # Status
 IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
