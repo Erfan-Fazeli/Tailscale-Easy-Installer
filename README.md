@@ -312,6 +312,12 @@ graph TB
 
 ---
 
+## 📚 Resources
+
+- **[Free GitHub Models Guide](GITHUB_MODELS.md)** - Comprehensive guide to the strongest free AI models available through GitHub Models (راهنمای کامل قوی‌ترین مدل‌های رایگان)
+
+---
+
 ## 📄 License
 
 MIT License - free to use, modify, and distribute.
